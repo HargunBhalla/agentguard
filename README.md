@@ -24,7 +24,44 @@ npm run dev
 | **Pre-flight** | The five proposed calls, their predicted state diffs, the policy checks each one trips, and approve/block controls. |
 | **Live trace** | Span timeline for run 8812, expandable to arguments and results, with a compensating rollback. |
 | **Chaos lab** | Inject a fault into a recorded run and watch how recovery behaves. |
-| **Replay** | Six recorded cases replayed against the candidate planner, with a promotion gate. |
+| **Replay** | The eval harness output — six recorded cases actually replayed against the candidate planner, with a promotion gate. |
+
+## The eval harness
+
+The Replay tab is not a mockup. `src/harness/` replays a suite of recorded
+cases against two real planners and reports what actually happened.
+
+```sh
+npm run eval     # exits non-zero if the candidate regresses a case
+```
+
+A run works like this: each case seeds a **shadow world** (inventory, calendar,
+CRM, mail), the planner drives it through an **instrumented tool API** that
+records every call, and the world it leaves behind is checked against
+**invariants**. A run that violates one also pays the cost of the compensating
+rollback, so a broken case comes out slower as well as wrong.
+
+The two planners share one body. Everything separating them is two settings:
+
+| | v14 baseline | v15 candidate |
+| --- | --- | --- |
+| Availability read | day by day | one window query |
+| Contact dedupe threshold | 0.90 | 0.95 |
+
+Both look like reasonable efficiency changes, and both are regressions. The
+window query cannot see a reservation sitting in the *interior* of the
+requested window, so v15 double-books a unit over an existing weekend
+reservation. The raised dedupe threshold drops a genuine 0.93 match, so a site
+contact is written as a new record instead of merged. Neither failure is
+declared anywhere — the suite finds them by running the planners and checking
+the resulting state.
+
+To compare your own planner, implement `run(goal, tools)` and pass it in:
+
+```js
+import { compareSuites } from './src/harness/index.js';
+compareSuites(v14, myPlanner);
+```
 
 ## How it's built
 
@@ -37,6 +74,8 @@ drive the whole prototype:
 The source keeps a deliberate split, inherited from the design prototype this
 was ported from:
 
+- `src/harness/` — the eval harness described above. Framework-free, so it runs
+  in the browser and from Node without change.
 - `src/AgentGuard.jsx` — `renderVals()` holds the scenario data and derives a
   flat bag of view values from state and props. `render()` binds that bag to
   markup and contains no logic of its own. Editing behaviour means editing

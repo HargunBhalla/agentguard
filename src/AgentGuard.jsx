@@ -1,5 +1,13 @@
 import React from 'react';
 import { css } from './css.js';
+import { compareSuites, verdictFor } from './harness/index.js';
+
+/*
+ * The replay suite is executed once, at module load. Every planner runs against
+ * a fresh shadow world and every tool cost is fixed, so the result is
+ * deterministic — the same six cases, the same two regressions, every reload.
+ */
+const SUITE = compareSuites();
 
 /*
  * AgentGuard — ported from the design prototype.
@@ -21,7 +29,7 @@ export default class AgentGuard extends React.Component {
     { n: '4', name: 'Failure injection', note: 'Timeouts, 500s, expired auth and malformed payloads replayed.', tab: 'chaos', status: 'ready', tone: 'ink' },
     { n: '5', name: 'Safe execution — via Composio', note: 'Approved calls issued through Composio sessions with a checkpoint.', tab: 'preflight', status: '2 of 5 approved', tone: 'gold' },
     { n: '6', name: 'Recovery & rollback', note: 'Retry, then saga-style compensating actions to the last clean state.', tab: 'trace', status: 'armed', tone: 'ink' },
-    { n: '7', name: 'Tracing, replay & evals', note: 'Spans recorded and replayed against the candidate planner.', tab: 'replay', status: '2 regressions', tone: 'gold' }
+    { n: '7', name: 'Tracing, replay & evals', note: 'Spans recorded and replayed against the candidate planner.', tab: 'replay', status: `${SUITE.regressions} regressions`, tone: 'gold' }
   ];
 
   state = { tab: 'pipeline', sim: 'idle', selId: 'a1', decisions: {},
@@ -97,14 +105,27 @@ export default class AgentGuard extends React.Component {
     { step: 'gmail.send — Marcus Hale', state: 'not run', undo: 'Skipped; no notice went out.' }
   ];
 
-  canaryDefs = [
-    { metric: 'Task success', old: '91%', cand: '96%', good: true },
-    { metric: 'Tool calls per run', old: '8.2', cand: '6.4', good: true },
-    { metric: 'Latency', old: '4.8s', cand: '3.5s', good: true },
-    { metric: 'Policy errors', old: '0.4%', cand: '0.1%', good: true },
-    { metric: 'Recovery rate', old: '72%', cand: '91%', good: true },
-    { metric: 'Invariant violations', old: '0', cand: '2', good: false }
-  ];
+  /**
+   * Canary metrics, measured from the suite rather than quoted. Only what the
+   * harness actually observes appears here — the prototype's "policy errors"
+   * and "recovery rate" rows are gone because nothing measures them yet.
+   */
+  get canaryDefs() {
+    const m = SUITE.metrics;
+    const pct = n => Math.round((n / m.cases) * 100) + '%';
+    const per = n => (n / m.cases).toFixed(1);
+    const secs = n => (n / 1000).toFixed(2) + 's';
+    return [
+      { metric: 'Cases passed', old: pct(m.baselinePassed), cand: pct(m.candidatePassed),
+        good: m.candidatePassed >= m.baselinePassed },
+      { metric: 'Tool calls per run', old: per(m.baselineCalls), cand: per(m.candidateCalls),
+        good: m.candidateCalls <= m.baselineCalls },
+      { metric: 'Latency per run', old: secs(m.baselineMs / m.cases), cand: secs(m.candidateMs / m.cases),
+        good: m.candidateMs <= m.baselineMs },
+      { metric: 'Invariant violations', old: '0', cand: String(m.violations), good: m.violations === 0 },
+      { metric: 'Regressions', old: '0', cand: String(SUITE.regressions), good: SUITE.regressions === 0 }
+    ];
+  }
 
   connectorDefs = [
     { id: 'gmail', label: 'Gmail' },
@@ -124,48 +145,41 @@ export default class AgentGuard extends React.Component {
     { id: 'corrupt', label: 'Corrupt response payload' }
   ];
 
-  caseDefs = [
-    { name: 'Move a rental, notify the customer', actions: 'inventory.reserve, calendar.update, gmail.send', v14: 'pass', v15: 'pass', delta: '−40ms' },
-    { name: 'Extend a rental over a booked weekend', actions: 'inventory.reserve ×2', v14: 'pass', v15: 'fail', delta: '+610ms' },
-    { name: 'Swap the assigned unit after a breakdown', actions: 'inventory.swap, crm.update', v14: 'pass', v15: 'pass', delta: '−12ms' },
-    { name: 'Duplicate site contact merge', actions: 'crm.create, crm.merge', v14: 'pass', v15: 'fail', delta: '+95ms' },
-    { name: 'Chase an unsigned rental agreement', actions: 'gmail.send', v14: 'pass', v15: 'pass', delta: '+8ms' },
-    { name: 'Early return, prorate the invoice', actions: 'inventory.release, crm.update', v14: 'pass', v15: 'pass', delta: '−3ms' }
-  ];
+  get caseDefs() {
+    return SUITE.results.map(r => ({
+      name: r.name, actions: r.actions,
+      v14: r.baseline.pass ? 'pass' : 'fail',
+      v15: r.candidate.pass ? 'pass' : 'fail',
+      delta: r.deltaLabel
+    }));
+  }
 
-  compareData = {
-    1: { summary: 'divergence at step 2 · double booking',
-      left: [ { step: 'llm.plan', meta: '8 steps' }, { step: 'inventory.check (per day)', meta: '4 calls' },
-        { step: 'conflict found', meta: 'Sat · R-2209' }, { step: 'inventory.reserve', meta: 'held' },
-        { step: 'policy: double booking', meta: 'clear' }, { step: 'result', meta: 'pass' } ],
-      right: [ { step: 'llm.plan', meta: '6 steps' },
-        { step: 'inventory.check (window only)', meta: '1 call', color: 'var(--color-accent-800)' },
-        { step: 'no conflict seen', meta: 'weekend not scanned', color: 'var(--color-accent-800)' },
-        { step: 'inventory.reserve', meta: 'overlaps R-2209', color: 'var(--color-accent-800)' },
-        { step: 'policy: double booking', meta: 'violated', color: 'var(--color-accent-800)' },
-        { step: 'result', meta: 'fail — held', color: 'var(--color-accent-800)' } ],
-      verdict: 'v15 collapses the per-day availability checks into one window query and stops seeing interior conflicts. Faster, but the excavator is booked over an existing weekend reservation and the invariant fires. Either restore the per-day scan or make inventory.check return interior overlaps.' },
-    3: { summary: 'divergence at step 2 · duplicate write',
-      left: [ { step: 'crm.query (dedupe)', meta: 'threshold 0.90' }, { step: 'match found', meta: '0.93' },
-        { step: 'crm.merge', meta: '1 record' }, { step: 'result', meta: 'pass' } ],
-      right: [ { step: 'crm.query (dedupe)', meta: 'threshold 0.95', color: 'var(--color-accent-800)' },
-        { step: 'no match', meta: '0.93 < 0.95', color: 'var(--color-accent-800)' },
-        { step: 'crm.create', meta: '1 new record', color: 'var(--color-accent-800)' },
-        { step: 'result', meta: 'fail — duplicate', color: 'var(--color-accent-800)' } ],
-      verdict: 'The dedupe threshold moved from 0.90 to 0.95 in v15, so a genuine site contact falls through and a duplicate is created instead of merged. Revert the threshold or add a secondary email-domain check before creating.' }
-  };
-
+  /**
+   * Build the side-by-side panel from the two recorded traces. Rows are tinted
+   * from the step the runs stopped agreeing at onward, which is where a reader
+   * needs to look.
+   */
   compareFor(i) {
     if (i == null) return { name: '', summary: '', left: [], right: [], verdict: '' };
-    const c = this.caseDefs[i];
-    const d = this.compareData[i] || {
-      summary: 'no divergence · both versions agree',
-      left: [{ step: 'llm.plan', meta: 'ok' }, { step: c.actions, meta: 'ok' }, { step: 'result', meta: 'pass' }],
-      right: [{ step: 'llm.plan', meta: 'ok' }, { step: c.actions, meta: 'ok' }, { step: 'result', meta: 'pass' }],
-      verdict: 'Both versions produce the same actions and the same final state. Latency moved ' + c.delta + '.'
-    };
-    const tint = rows => rows.map(r => ({ ...r, color: r.color || 'var(--color-text)' }));
-    return { name: c.name, summary: d.summary, left: tint(d.left), right: tint(d.right), verdict: d.verdict };
+    const r = SUITE.results[i];
+    const ink = 'var(--color-text)', flag = 'var(--color-accent-800)';
+
+    const rows = (run, tint) => [
+      ...run.trace.map((sp, n) => ({
+        step: sp.tool, meta: sp.meta,
+        color: tint && r.divergesAt >= 0 && n >= r.divergesAt ? flag : ink
+      })),
+      { step: 'result', meta: run.pass ? 'pass' : 'fail — rolled back',
+        color: run.pass ? ink : flag }
+    ];
+
+    const summary = r.divergesAt < 0
+      ? 'no divergence · both planners agree'
+      : `divergence at step ${r.divergesAt + 1} · ` +
+        (r.regressed ? r.candidate.violations[0].id.replace(/_/g, ' ') : 'same final state');
+
+    return { name: r.name, summary, left: rows(r.baseline, false),
+      right: rows(r.candidate, true), verdict: verdictFor(r) };
   }
 
   componentWillUnmount() { (this._t || []).forEach(clearTimeout); }
@@ -381,16 +395,16 @@ export default class AgentGuard extends React.Component {
         // cannot leave the page asserting two different rollout states.
         const map = {
           held: { status: 'held at 10% canary', color: 'var(--color-accent-700)',
-            note: '42 recorded runs replayed against v15. Two fail on the double-booking invariant, so the candidate stays behind the canary — 10% of live rental traffic, every action still pre-flighted.',
-            badge: '2 regressions · rollout held at 10%',
+            note: `${SUITE.metrics.cases} recorded cases replayed against v15. ${SUITE.regressions} regress, so the candidate stays behind the canary — 10% of live rental traffic, every action still pre-flighted.`,
+            badge: `${SUITE.regressions} regressions · rollout held at 10%`,
             outlook: 'Rollout stays held until the replay suite is green or the check is restored.' },
           promoted: { status: 'promoted to 100%', color: 'var(--color-accent-800)',
-            note: 'v15 is now the default planner for all rental traffic. The two failing cases were accepted with an amended invariant; AgentGuard will hold any run that trips it and page the on-call owner.',
-            badge: '2 regressions · rolled out to 100%',
+            note: `v15 is now the default planner for all rental traffic. The ${SUITE.regressions} failing cases were accepted with an amended invariant; AgentGuard will hold any run that trips it and page the on-call owner.`,
+            badge: `${SUITE.regressions} regressions · rolled out to 100%`,
             outlook: 'Both cases were accepted with an amended invariant, so the rollout went ahead — any run that trips the amended check is held and the on-call owner paged.' },
           blocked: { status: 'blocked · rolled back to v14', color: 'var(--color-accent-800)',
             note: 'v15 is withdrawn from the canary and v14 restored. The candidate keeps receiving shadow traffic, so the replay suite continues to fill without any production exposure.',
-            badge: '2 regressions · rolled back to v14',
+            badge: `${SUITE.regressions} regressions · rolled back to v14`,
             outlook: 'v14 is serving production again. v15 keeps taking shadow traffic, so the replay suite fills without exposure while the check is restored.' }
         };
         const acts = [['promote', 'Promote to 100%'], ['held', 'Hold at canary'], ['blocked', 'Block & roll back']]
@@ -1022,7 +1036,7 @@ export default class AgentGuard extends React.Component {
                   canary
                 </div>
                 <h1 style={css(`font-family:var(--font-heading);font-weight:400;font-size:36px;margin:4.6px 0 0`)}>
-                  42 recorded runs, replayed against v15.
+                  {SUITE.metrics.cases} recorded cases, replayed against v15.
                 </h1>
               </div>
               <span style={css(`font-size:12.5px;color:${gate.color};border:1px solid var(--color-accent);padding:6px 13.8px;border-radius:var(--radius-md);white-space:nowrap`)}>
@@ -1171,7 +1185,7 @@ export default class AgentGuard extends React.Component {
               </div>
             </div>
             <p style={css(`font-size:13.5px;line-height:1.8;text-align:justify;max-width:72ch;margin-top:22px;color:var(--color-neutral-800)`)}>
-              Both regressions come from the same shortcut: v15 checks availability once across the whole window where v14 walked it day by day, so interior conflicts go unseen and the double-booking invariant fires mid-run. {gate.outlook}
+              The regressions come from two efficiency changes: v15 checks availability once across the whole window where v14 walked it day by day, so interior conflicts go unseen, and it raised the contact-dedupe threshold from 0.90 to 0.95, so genuine matches are written as new records. {gate.outlook}
             </p>
           </div>
           </>
