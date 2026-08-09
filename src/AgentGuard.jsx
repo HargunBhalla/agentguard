@@ -4,6 +4,7 @@ import { compareSuites, verdictFor } from './harness/index.js';
 import { rehearseAll, POLICIES, invariantStatus } from './harness/shadow.js';
 import { runChaos, FAULTS, MODIFIERS } from './harness/chaos.js';
 import { runTrace, runSaga } from './harness/trace.js';
+import { tabFromHash, DEFAULT_TAB } from './routing.js';
 
 /*
  * The replay suite is executed once, at module load. Every planner runs against
@@ -42,7 +43,7 @@ export default class AgentGuard extends React.Component {
     { n: '7', name: 'Tracing, replay & evals', note: 'Spans recorded and replayed against the candidate planner.', tab: 'replay', status: `${SUITE.regressions} regressions`, tone: 'gold' }
   ];
 
-  state = { tab: 'pipeline', sim: 'idle', selId: 'a1', decisions: {},
+  state = { tab: tabFromHash(), sim: 'idle', selId: 'a1', decisions: {},
     policyOn: { p1: true, p2: true, p3: true, p4: false },
     openSpans: { s5: true }, rollback: 'none', chaos: 'idle', chaosLog: [], openCase: null,
     connector: 'gmail', fault: 'f1', stepId: 'gmail.send', mods: {} };
@@ -127,7 +128,25 @@ export default class AgentGuard extends React.Component {
       right: rows(r.candidate, true), verdict: verdictFor(r) };
   }
 
-  componentWillUnmount() { (this._t || []).forEach(clearTimeout); }
+  componentDidMount() {
+    window.addEventListener('hashchange', this.onHashChange);
+    // Give the first tab a hash too, so every tab is equally linkable — but
+    // replace rather than push, so Back still leaves the app on the first press.
+    if (!window.location.hash) window.history.replaceState(null, '', `#${DEFAULT_TAB}`);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('hashchange', this.onHashChange);
+    (this._t || []).forEach(clearTimeout);
+  }
+
+  onHashChange = () => this.setState({ tab: tabFromHash() });
+
+  /** Navigate by writing the hash; the listener above is what moves the tab. */
+  goTab = (tab) => {
+    if (tab === this.state.tab) return;
+    window.location.hash = tab;
+  };
   later(fn, ms) { (this._t = this._t || []).push(setTimeout(fn, ms)); }
 
   verdictOf(a) {
@@ -170,7 +189,7 @@ export default class AgentGuard extends React.Component {
   renderVals() {
     const st = this.state;
     const tabs = [['pipeline', 'Pipeline'], ['preflight', 'Pre-flight'], ['trace', 'Live trace'], ['chaos', 'Chaos lab'], ['replay', 'Replay']].map(([id, label]) => ({
-      label, go: () => this.setState({ tab: id }),
+      label, go: () => this.goTab(id),
       border: st.tab === id ? 'var(--color-accent)' : 'transparent',
       color: st.tab === id ? 'var(--color-accent-700)' : 'var(--color-neutral-700)'
     }));
@@ -230,11 +249,21 @@ export default class AgentGuard extends React.Component {
       text: mods[m.id] ? 'var(--color-text)' : 'var(--color-neutral-700)',
       toggle: () => this.setState(s => ({ mods: { ...(s.mods || {}), [m.id]: !(s.mods || {})[m.id] }, chaos: 'idle', chaosLog: [] })) }));
 
+    // Header status. Counted off the same verdicts the pre-flight gate shows,
+    // so toggling a policy or approving a call moves it.
+    const heldCount = actions.filter(a => {
+      const d = st.decisions[a.id];
+      if (d === 'approved') return false;
+      if (d === 'blocked') return true;
+      return this.verdictOf(a) !== 'safe';
+    }).length;
+    const fleet = `${actions.length} calls proposed · ${heldCount} held`;
+
     return {
-      tabs,
+      tabs, fleet,
       stages: this.stageDefs.map(s => ({ n: s.n, name: s.name, note: s.note, status: s.status,
         color: s.tone === 'gold' ? 'var(--color-accent-700)' : 'var(--color-neutral-600)',
-        go: () => this.setState({ tab: s.tab }) })),
+        go: () => this.goTab(s.tab) })),
       onPipeline: st.tab === 'pipeline',
       onPreflight: st.tab === 'preflight', onTrace: st.tab === 'trace',
       onChaos: st.tab === 'chaos', onReplay: st.tab === 'replay',
@@ -307,7 +336,7 @@ export default class AgentGuard extends React.Component {
 
   render() {
     const {
-      tabs, stages, onPipeline, onPreflight, onTrace, onChaos, onReplay, simIdle,
+      tabs, fleet, stages, onPipeline, onPreflight, onTrace, onChaos, onReplay, simIdle,
       simRunning, simDone, simNotDone, runSim, actions, sel, selDiff, selChecks, policies,
       decisionNote, hasRisk, invariants, saga, canary, approve, block, spans, rollback,
       rollbackLabel, rolledBack, faults, connectors, steps, modifiers, experimentLine,
@@ -339,7 +368,7 @@ export default class AgentGuard extends React.Component {
           <div style={css(`display:flex;align-items:center;gap:9.2px;font-size:12px;color:var(--color-neutral-700)`)}>
             <span style={css(`width:7px;height:7px;border-radius:50%;background:var(--color-accent);animation:ag-pulse 2s infinite`)}></span>
             <span>
-              4 agents live · 1 held
+              {fleet}
             </span>
           </div>
         </header>
