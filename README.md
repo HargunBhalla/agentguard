@@ -26,10 +26,24 @@ npm run dev
 | **Chaos lab** | Inject a fault into a recorded run and watch how recovery behaves. |
 | **Replay** | The eval harness output — six recorded cases actually replayed against the candidate planner, with a promotion gate. |
 
-## The eval harness
+## The harness
 
-The Replay tab is not a mockup. `src/harness/` replays a suite of recorded
-cases against two real planners and reports what actually happened.
+Nothing in the app is a mockup. `src/harness/` is a small execution engine, and
+the three interactive tabs are its output.
+
+| Tab | What runs |
+| --- | --- |
+| **Pre-flight** | Each proposed call is rehearsed against a throwaway world. Its diff, blast radius and policy verdicts are read back off the result. |
+| **Chaos lab** | The approved plan is replayed with a fault injected, driven through retry-with-backoff and compensating rollback. Duplicates are counted in the world; consistency is a diff against a clean run. |
+| **Replay** | Six recorded cases replayed against two planners, with divergence computed from the traces. |
+
+Policies are predicates, not labels. `no_double_booked_equipment` fires because
+the rehearsal left a unit with overlapping holds — turn that policy off and the
+call goes green, because nothing is asserting it was ever bad.
+
+```sh
+npm run eval     # exits non-zero if the candidate regresses a case
+```
 
 ```sh
 npm run eval     # exits non-zero if the candidate regresses a case
@@ -56,7 +70,9 @@ contact is written as a new record instead of merged. Neither failure is
 declared anywhere — the suite finds them by running the planners and checking
 the resulting state.
 
-To compare your own planner, implement `run(goal, tools)` and pass it in:
+### Bring your own planner
+
+Implement `run(goal, tools)` and pass it in:
 
 ```js
 import { compareSuites } from './src/harness/index.js';
@@ -74,8 +90,11 @@ drive the whole prototype:
 The source keeps a deliberate split, inherited from the design prototype this
 was ported from:
 
-- `src/harness/` — the eval harness described above. Framework-free, so it runs
-  in the browser and from Node without change.
+- `src/harness/` — the engine described above: `world.js` (shadow state),
+  `tools.js` (instrumented tool surface), `invariants.js`, `shadow.js`
+  (pre-flight rehearsal), `chaos.js` (fault injection), `planners.js` and
+  `index.js` (the replay runner). Framework-free, so it runs in the browser and
+  from Node without change.
 - `src/AgentGuard.jsx` — `renderVals()` holds the scenario data and derives a
   flat bag of view values from state and props. `render()` binds that bag to
   markup and contains no logic of its own. Editing behaviour means editing

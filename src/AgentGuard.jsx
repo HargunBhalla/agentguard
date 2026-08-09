@@ -1,6 +1,8 @@
 import React from 'react';
 import { css } from './css.js';
 import { compareSuites, verdictFor } from './harness/index.js';
+import { rehearseAll, POLICIES, invariantStatus } from './harness/shadow.js';
+import { runChaos, FAULTS, MODIFIERS } from './harness/chaos.js';
 
 /*
  * The replay suite is executed once, at module load. Every planner runs against
@@ -8,6 +10,13 @@ import { compareSuites, verdictFor } from './harness/index.js';
  * deterministic — the same six cases, the same two regressions, every reload.
  */
 const SUITE = compareSuites();
+
+/*
+ * The pre-flight gate's five proposed calls, rehearsed against the shadow
+ * world. Their diffs, blast radii and policy verdicts are read back off the
+ * rehearsal rather than written down here.
+ */
+const REHEARSED = rehearseAll();
 
 /*
  * AgentGuard — ported from the design prototype.
@@ -37,38 +46,9 @@ export default class AgentGuard extends React.Component {
     openSpans: { s5: true }, rollback: 'none', chaos: 'idle', chaosLog: [], openCase: null,
     connector: 'gmail', fault: 'f1', stepId: 'gmail.send', mods: {} };
 
-  policyDefs = [
-    { id: 'p1', name: 'No double-booked equipment', mode: 'hard block', sev: 'blocked' },
-    { id: 'p2', name: 'Reservation stays inside the contract window', mode: 'hold for review', sev: 'review' },
-    { id: 'p3', name: 'No deletions on shared calendars', mode: 'hard block', sev: 'blocked' },
-    { id: 'p4', name: 'No bulk send over 50 recipients', mode: 'hold for review', sev: 'review' }
-  ];
+  policyDefs = POLICIES;
 
-  actionDefs = [
-    { id: 'a1', tool: 'inventory.reserve', trips: ['p1'],
-      risk: 'Risk: high — execution blocked. Excavator #184 is already booked Friday.',
-      alt: 'Suggested alternative: excavator #219, same 8-ton class, available Fri–Mon at the same rate. Swapping the unit clears the invariant without moving the date.',
-      summary: 'Hold excavator #184 for Fri 14 – Mon 17 Aug',
-      detail: 'Moving the rental to Friday extends the hold across the weekend. Shadow execution wrote the reservation into the sandbox inventory service and found unit #184 already committed to reservation R-2209 from Saturday morning.',
-      blast: 'Blast radius: 1 unit · collides with an existing reservation',
-      diff: [{ field: 'unit.184.status', before: 'Available Fri', after: 'Reserved Fri–Mon' }, { field: 'reservation.R-2118.window', before: 'Wed 12 – Sat 15', after: 'Fri 14 – Mon 17' }, { field: 'conflicts.open', before: '0', after: '1 (R-2209)' }] },
-    { id: 'a2', tool: 'calendar.update', trips: [], summary: 'Move delivery window to Fri 14 Aug, 07:00',
-      detail: 'The delivery event sits on the dispatch calendar with the driver and the yard lead as attendees. Both are free in the new window, and the event carries a restorable checkpoint.',
-      blast: 'Blast radius: 1 event · 2 attendees notified · reversible',
-      diff: [{ field: 'event.start', before: 'Wed 12 Aug 07:00', after: 'Fri 14 Aug 07:00' }, { field: 'attendee.notices', before: '0', after: '2' }] },
-    { id: 'a3', tool: 'crm.update', trips: [], summary: 'Reschedule reservation R-2118 on ABC Construction',
-      detail: 'The rental record on the ABC Construction account is updated to the new window and the owning salesperson is flagged for a follow-up. Inside the agent’s scoped permission set.',
-      blast: 'Blast radius: 1 record · reversible from checkpoint',
-      diff: [{ field: 'reservation.stage', before: 'Scheduled', after: 'Rescheduled' }, { field: 'account.last_touch', before: '2026-07-30', after: '2026-08-09' }] },
-    { id: 'a4', tool: 'gmail.send', trips: [], summary: 'Notify Marcus Hale — new delivery window',
-      detail: 'A single confirmation to the site contact on file, quoting the new window and the unit number. No attachments, no account data in the body.',
-      blast: 'Blast radius: 1 external recipient · irreversible once sent',
-      diff: [{ field: 'messages.sent', before: '0', after: '1' }, { field: 'thread.labels', before: '—', after: '+rental-reschedule' }] },
-    { id: 'a5', tool: 'gmail.send', trips: ['p4'], summary: 'Yard-wide schedule digest to 68 recipients',
-      detail: 'The planner expanded “update the team” into a digest addressed to every dispatcher and driver on the yard distribution list — 68 recipients for a change that affects two of them.',
-      blast: 'Blast radius: 68 internal recipients · irreversible once sent',
-      diff: [{ field: 'messages.sent', before: '0', after: '68' }, { field: 'recipients.distinct', before: '0', after: '68' }] }
-  ];
+  actionDefs = REHEARSED;
 
   spanDefs = [
     { id: 's1', name: 'llm.plan', left: 0, width: 16, ms: '820ms', status: 'ok', args: '{\n  "goal": "move ABC excavator to Friday,\\n           update salesperson, notify customer"\n}', result: '{\n  "steps": 7,\n  "tools": ["crm","inventory","calendar","gmail"]\n}' },
@@ -80,23 +60,9 @@ export default class AgentGuard extends React.Component {
     { id: 's7', name: 'gmail.send', left: 81, width: 14, ms: '480ms', status: 'ok', args: '{\n  "to": "marcus.hale@abcconstruction.com",\n  "template": "rental-reschedule"\n}', result: '{\n  "sent": 1,\n  "checkpoint": "ck-8812-03"\n}' }
   ];
 
-  faultDefs = [
-    { id: 'f1', name: '429 rate limit', note: 'Provider throttles mid-batch' },
-    { id: 'f2', name: 'Timeout', note: 'No response after 30s' },
-    { id: 'f3', name: 'Auth token expired', note: 'Composio session refresh fails once' },
-    { id: 'f4', name: 'Partial write', note: 'Reservation lands, notification does not' },
-    { id: 'f5', name: '500 from provider', note: 'Upstream error, retryable' },
-    { id: 'f6', name: 'Malformed JSON', note: 'Tool returns an unparseable payload' },
-    { id: 'f7', name: 'Stale inventory', note: 'Availability read is 40s out of date' }
-  ];
+  faultDefs = FAULTS;
 
-  invariantDefs = [
-    { expr: 'inventory.available >= 0', ok: true },
-    { expr: 'no_overlap(unit, window)', ok: false },
-    { expr: 'external_email_count <= 10', ok: false },
-    { expr: 'reservation.customer_id != None', ok: true },
-    { expr: 'discount <= 20%', ok: true }
-  ];
+  invariantDefs = invariantStatus();
 
   sagaDefs = [
     { step: 'inventory.reserve — #184', state: 'committed', undo: 'Reservation released; unit returned to Wed–Sat.' },
@@ -139,11 +105,7 @@ export default class AgentGuard extends React.Component {
     calendar: [{ id: 'calendar.update', label: 'calendar.update — step 5' }]
   };
 
-  modifierDefs = [
-    { id: 'persist', label: 'Persist failure (every retry fails)' },
-    { id: 'expire', label: 'Expire OAuth token mid-run' },
-    { id: 'corrupt', label: 'Corrupt response payload' }
-  ];
+  modifierDefs = MODIFIERS;
 
   get caseDefs() {
     return SUITE.results.map(r => ({
@@ -204,72 +166,12 @@ export default class AgentGuard extends React.Component {
     this.later(() => this.setState({ rollback: 'done' }), 1100);
   };
 
+  /** Replay the approved plan with the selected fault actually injected. */
   experiment() {
     const st = this.state;
-    const f = this.faultDefs.find(x => x.id === st.fault) || this.faultDefs[0];
     const list = this.stepDefs[st.connector || 'gmail'];
-    const step = (list.find(s => s.id === st.stepId) || list[0]).id;
-    const m = st.mods || {};
-    const ink = 'var(--color-neutral-800)', gold = 'var(--color-accent-700)', deep = 'var(--color-accent-800)';
-    const log = [
-      { t: '0.00s', text: 'Replaying recorded run 8812 against the shadow copy.', color: ink },
-      { t: '1.24s', text: 'Injected ' + f.name + ' at ' + step + ' (batch 3 of 9).', color: gold }
-    ];
-    let outcome;
-    if (m.corrupt) {
-      log.push(
-        { t: '1.31s', text: 'Response payload failed schema validation — 2 fields unreadable.', color: deep },
-        { t: '1.33s', text: 'Agent proceeded on a partial read and re-issued ' + step + '.', color: deep },
-        { t: '2.02s', text: 'Idempotency key matched on 1 of 2 calls — a duplicate reservation landed.', color: deep },
-        { t: '2.40s', text: 'Rollback released the duplicate, but the CRM reservation stage is now ambiguous.', color: gold }
-      );
-      outcome = { headline: 'Recovered — but not cleanly.', border: 'var(--color-accent)', color: 'var(--color-accent-800)',
-        checks: [
-          { label: 'Recovered', value: 'Partially', note: 'Run completed after a manual-review hold.', color: 'var(--color-accent-700)' },
-          { label: 'Duplicate actions', value: '1 detected', note: 'inventory.reserve fired twice; one released.', color: 'var(--color-accent-800)' },
-          { label: 'State consistency', value: 'Diverged', note: 'Reservation window does not match the trace.', color: 'var(--color-accent-800)' }
-        ] };
-    } else if (m.persist) {
-      log.push(
-        { t: '1.26s', text: 'Attempt 1 failed. Backing off 2s.', color: ink },
-        { t: '3.31s', text: 'Attempt 2 failed. Backing off 4s.', color: ink },
-        { t: '7.40s', text: 'Attempt 3 failed. Retry budget exhausted.', color: deep },
-        { t: '7.42s', text: 'Compensating saga to ck-8812-03 — reservation released, calendar event restored, notice recalled.', color: gold },
-        { t: '8.10s', text: 'Run halted. Incident filed as INC-2261.', color: ink }
-      );
-      outcome = { headline: 'Failed safe. No duplicates, no drift.', border: 'var(--color-accent)', color: 'var(--color-accent-700)',
-        checks: [
-          { label: 'Recovered', value: 'No — halted', note: 'Retry budget spent; run stopped deliberately.', color: 'var(--color-accent-700)' },
-          { label: 'Duplicate actions', value: 'None', note: 'Idempotency keys held across all 3 retries.', color: 'var(--color-neutral-700)' },
-          { label: 'State consistency', value: 'Clean', note: 'Shadow state matches the pre-run checkpoint.', color: 'var(--color-neutral-700)' }
-        ] };
-    } else if (m.expire) {
-      log.push(
-        { t: '1.28s', text: 'OAuth token expired mid-run. Refresh requested.', color: gold },
-        { t: '2.10s', text: 'Refresh succeeded after 1 failure. Session re-established.', color: ink },
-        { t: '2.44s', text: 'Resumed ' + step + ' from the last acknowledged batch.', color: ink },
-        { t: '3.90s', text: 'Run completed. Reservation, calendar and notice all consistent.', color: ink }
-      );
-      outcome = { headline: 'Recovered cleanly.', border: 'var(--color-divider)', color: 'var(--color-text)',
-        checks: [
-          { label: 'Recovered', value: 'Yes · 2.6s', note: 'Token refreshed and the run resumed in place.', color: 'var(--color-neutral-800)' },
-          { label: 'Duplicate actions', value: 'None', note: 'Resumed from the last acknowledged batch.', color: 'var(--color-neutral-700)' },
-          { label: 'State consistency', value: 'Clean', note: 'Final state equals the predicted diff.', color: 'var(--color-neutral-700)' }
-        ] };
-    } else {
-      log.push(
-        { t: '1.26s', text: 'Attempt 1 failed. Backing off 2s.', color: ink },
-        { t: '3.30s', text: 'Attempt 2 succeeded. Batch 3 of 9 acknowledged.', color: ink },
-        { t: '5.80s', text: 'Run completed. Reservation, calendar and notice all consistent.', color: ink }
-      );
-      outcome = { headline: 'Recovered cleanly.', border: 'var(--color-divider)', color: 'var(--color-text)',
-        checks: [
-          { label: 'Recovered', value: 'Yes · 1 retry', note: 'Backoff absorbed the fault inside the SLA.', color: 'var(--color-neutral-800)' },
-          { label: 'Duplicate actions', value: 'None', note: 'Idempotency key deduplicated the retry.', color: 'var(--color-neutral-700)' },
-          { label: 'State consistency', value: 'Clean', note: 'Final state equals the predicted diff.', color: 'var(--color-neutral-700)' }
-        ] };
-    }
-    return { log, outcome };
+    const step = (list.find(x => x.id === st.stepId) || list[0]).id;
+    return runChaos({ fault: st.fault, stepId: step, mods: st.mods || {} });
   }
 
   inject = () => {
