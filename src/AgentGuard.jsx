@@ -349,9 +349,17 @@ export default class AgentGuard extends React.Component {
       <div style={css(`height:100vh;display:flex;flex-direction:column;background:var(--color-bg);font-family:var(--font-body)`)}>
         <header style={css(`display:flex;align-items:center;justify-content:space-between;padding:14px 27.6px;border-bottom:1px solid var(--color-divider);flex:none`)}>
           <div style={css(`display:flex;align-items:baseline;gap:18.4px`)}>
-            <span style={css(`font-family:var(--font-heading);font-size:23px`)}>
+            {/* A real anchor rather than a click handler, so the wordmark
+                behaves like a home link: keyboard-focusable, middle-clickable,
+                and it creates a history entry on its own. color:inherit keeps
+                the stylesheet's link colour off it. */}
+            <a
+              href="#pipeline"
+              aria-label="AgentGuard — back to the pipeline"
+              style={css(`font-family:var(--font-heading);font-size:23px;color:inherit;text-decoration:none;cursor:pointer`)}
+            >
               AgentGuard
-            </span>
+            </a>
             <span style={css(`font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-600);font-feature-settings:'tnum'`)}>
               rental-ops · planner v15 · staging
             </span>
