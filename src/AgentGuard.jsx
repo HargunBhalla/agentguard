@@ -376,13 +376,22 @@ export default class AgentGuard extends React.Component {
       compare: this.compareFor(st.openCase),
       gate: (() => {
         const g = st.gate || 'held';
+        // badge and outlook feed the two lines outside this card — the header
+        // pill and the closing paragraph. They live here so a gate decision
+        // cannot leave the page asserting two different rollout states.
         const map = {
           held: { status: 'held at 10% canary', color: 'var(--color-accent-700)',
-            note: '42 recorded runs replayed against v15. Two fail on the double-booking invariant, so the candidate stays behind the canary — 10% of live rental traffic, every action still pre-flighted.' },
+            note: '42 recorded runs replayed against v15. Two fail on the double-booking invariant, so the candidate stays behind the canary — 10% of live rental traffic, every action still pre-flighted.',
+            badge: '2 regressions · rollout held at 10%',
+            outlook: 'Rollout stays held until the replay suite is green or the check is restored.' },
           promoted: { status: 'promoted to 100%', color: 'var(--color-accent-800)',
-            note: 'v15 is now the default planner for all rental traffic. The two failing cases were accepted with an amended invariant; AgentGuard will hold any run that trips it and page the on-call owner.' },
+            note: 'v15 is now the default planner for all rental traffic. The two failing cases were accepted with an amended invariant; AgentGuard will hold any run that trips it and page the on-call owner.',
+            badge: '2 regressions · rolled out to 100%',
+            outlook: 'Both cases were accepted with an amended invariant, so the rollout went ahead — any run that trips the amended check is held and the on-call owner paged.' },
           blocked: { status: 'blocked · rolled back to v14', color: 'var(--color-accent-800)',
-            note: 'v15 is withdrawn from the canary and v14 restored. The candidate keeps receiving shadow traffic, so the replay suite continues to fill without any production exposure.' }
+            note: 'v15 is withdrawn from the canary and v14 restored. The candidate keeps receiving shadow traffic, so the replay suite continues to fill without any production exposure.',
+            badge: '2 regressions · rolled back to v14',
+            outlook: 'v14 is serving production again. v15 keeps taking shadow traffic, so the replay suite fills without exposure while the check is restored.' }
         };
         const acts = [['promote', 'Promote to 100%'], ['held', 'Hold at canary'], ['blocked', 'Block & roll back']]
           .map(([id, label]) => {
@@ -1016,8 +1025,8 @@ export default class AgentGuard extends React.Component {
                   42 recorded runs, replayed against v15.
                 </h1>
               </div>
-              <span style={css(`font-size:12.5px;color:var(--color-accent-700);border:1px solid var(--color-accent);padding:6px 13.8px;border-radius:var(--radius-md);white-space:nowrap`)}>
-                2 regressions · rollout held at 10%
+              <span style={css(`font-size:12.5px;color:${gate.color};border:1px solid var(--color-accent);padding:6px 13.8px;border-radius:var(--radius-md);white-space:nowrap`)}>
+                {gate.badge}
               </span>
             </div>
             <div style={css(`display:grid;grid-template-columns:repeat(6,1fr);gap:0;margin-top:22px;border-top:1px solid var(--color-text)`)}>
@@ -1162,7 +1171,7 @@ export default class AgentGuard extends React.Component {
               </div>
             </div>
             <p style={css(`font-size:13.5px;line-height:1.8;text-align:justify;max-width:72ch;margin-top:22px;color:var(--color-neutral-800)`)}>
-              Both regressions come from the same shortcut: v15 checks availability once across the whole window where v14 walked it day by day, so interior conflicts go unseen and the double-booking invariant fires mid-run. Rollout stays held until the replay suite is green or the check is restored.
+              Both regressions come from the same shortcut: v15 checks availability once across the whole window where v14 walked it day by day, so interior conflicts go unseen and the double-booking invariant fires mid-run. {gate.outlook}
             </p>
           </div>
           </>
