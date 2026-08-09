@@ -28,12 +28,13 @@ npm run dev
 
 ## The harness
 
-Nothing in the app is a mockup. `src/harness/` is a small execution engine, and
-the three interactive tabs are its output.
+`src/harness/` is a small execution engine. The interactive tabs render what it
+produces rather than fixtures:
 
 | Tab | What runs |
 | --- | --- |
 | **Pre-flight** | Each proposed call is rehearsed against a throwaway world. Its diff, blast radius and policy verdicts are read back off the result. |
+| **Live trace** | Run 8812's connector calls, executed against a shadow copy, with the arguments and results they really produced. The planning, discovery and simulate spans are derived rather than executed — the simulate span reports the diff and violation counts the rehearsal found. |
 | **Chaos lab** | The approved plan is replayed with a fault injected, driven through retry-with-backoff and compensating rollback. Duplicates are counted in the world; consistency is a diff against a clean run. |
 | **Replay** | Six recorded cases replayed against two planners, with divergence computed from the traces. |
 
@@ -42,6 +43,7 @@ the rehearsal left a unit with overlapping holds — turn that policy off and th
 call goes green, because nothing is asserting it was ever bad.
 
 ```sh
+npm test         # the harness's own tests
 npm run eval     # exits non-zero if the candidate regresses a case
 ```
 

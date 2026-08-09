@@ -24,8 +24,10 @@ export const COST = {
  * two planners is computed from.
  */
 export function makeTools(world, trace) {
-  const record = (tool, meta, result) => {
-    trace.push({ tool, meta, ms: COST[tool] ?? 50 });
+  // Args and result are kept alongside the span so the trace view can show
+  // what a call was actually given and what came back, rather than a caption.
+  const record = (tool, meta, result, args) => {
+    trace.push({ tool, meta, ms: COST[tool] ?? 50, args, result });
     return result;
   };
 
@@ -48,18 +50,19 @@ export function makeTools(world, trace) {
         return record(
           'inventory.check',
           perDay ? `${unit} · ${days(from, to).length} days scanned` : `${unit} · window only`,
-          { available: conflicts.length === 0, conflicts: conflicts.map((c) => c.id) }
+          { available: conflicts.length === 0, conflicts: conflicts.map((c) => c.id) },
+          { unit, window: `${from}/${to}`, mode: perDay ? 'per-day' : 'window' }
         );
       },
       reserve({ unit, from, to, id }) {
         const u = (world.inventory.units[unit] ||= { reservations: [] });
         u.reservations.push({ id, from, to });
-        return record('inventory.reserve', `${unit} · ${from}→${to}`, { id });
+        return record('inventory.reserve', `${unit} · ${from}→${to}`, { id }, { unit, from, to, id });
       },
       release({ unit, id }) {
         const u = world.inventory.units[unit];
         if (u) u.reservations = u.reservations.filter((r) => r.id !== id);
-        return record('inventory.release', `${unit} · ${id}`, { released: true });
+        return record('inventory.release', `${unit} · ${id}`, { released: true }, { unit, id });
       },
       swap({ from: fromUnit, to: toUnit, id }) {
         const src = world.inventory.units[fromUnit];
@@ -68,14 +71,14 @@ export function makeTools(world, trace) {
           src.reservations = src.reservations.filter((r) => r.id !== id);
           (world.inventory.units[toUnit] ||= { reservations: [] }).reservations.push(moved);
         }
-        return record('inventory.swap', `${fromUnit} → ${toUnit}`, { swapped: !!moved });
+        return record('inventory.swap', `${fromUnit} → ${toUnit}`, { swapped: !!moved }, { from: fromUnit, to: toUnit, id });
       },
     },
 
     calendar: {
       update({ event, start }) {
         world.calendar.events[event] = { ...(world.calendar.events[event] || {}), start };
-        return record('calendar.update', `${event} · ${start}`, { ok: true });
+        return record('calendar.update', `${event} · ${start}`, { ok: true }, { event, start });
       },
     },
 
@@ -91,21 +94,24 @@ export function makeTools(world, trace) {
           'crm.query',
           `dedupe threshold ${threshold.toFixed(2)}` +
             (best ? ` · best ${best.score.toFixed(2)}` : ' · no candidates'),
-          { match: match?.contact ?? null, score: best?.score ?? 0 }
+          // The caller gets the contact itself — crm.merge needs the record,
+          // not its address. The trace formats it for display at render time.
+          { match: match?.contact ?? null, score: Number((best?.score ?? 0).toFixed(2)) },
+          { candidate: candidate.email, threshold }
         );
       },
       create({ contact }) {
         world.crm.contacts.push({ ...contact });
-        return record('crm.create', `${contact.email}`, { created: true });
+        return record('crm.create', `${contact.email}`, { created: true }, { email: contact.email });
       },
       merge({ into, contact }) {
         const target = world.crm.contacts.find((c) => c.email === into.email);
         if (target) target.aliases = [...(target.aliases || []), contact.email];
-        return record('crm.merge', `into ${into.email}`, { merged: true });
+        return record('crm.merge', `into ${into.email}`, { merged: true }, { into: into.email, from: contact.email });
       },
       update({ id, patch }) {
         world.crm.reservations[id] = { ...(world.crm.reservations[id] || {}), ...patch };
-        return record('crm.update', `${id} · ${Object.keys(patch).join(', ')}`, { ok: true });
+        return record('crm.update', `${id} · ${Object.keys(patch).join(', ')}`, { ok: true }, { id, patch });
       },
     },
 
@@ -116,7 +122,8 @@ export function makeTools(world, trace) {
         return record(
           'gmail.send',
           `${recipients.length} recipient${recipients.length === 1 ? '' : 's'}`,
-          { sent: recipients.length }
+          { sent: recipients.length },
+          { to: recipients.length === 1 ? recipients[0] : `${recipients.length} recipients`, template }
         );
       },
     },

@@ -3,6 +3,7 @@ import { css } from './css.js';
 import { compareSuites, verdictFor } from './harness/index.js';
 import { rehearseAll, POLICIES, invariantStatus } from './harness/shadow.js';
 import { runChaos, FAULTS, MODIFIERS } from './harness/chaos.js';
+import { runTrace, runSaga } from './harness/trace.js';
 
 /*
  * The replay suite is executed once, at module load. Every planner runs against
@@ -50,32 +51,14 @@ export default class AgentGuard extends React.Component {
 
   actionDefs = REHEARSED;
 
-  spanDefs = [
-    { id: 's1', name: 'llm.plan', left: 0, width: 16, ms: '820ms', status: 'ok', args: '{\n  "goal": "move ABC excavator to Friday,\\n           update salesperson, notify customer"\n}', result: '{\n  "steps": 7,\n  "tools": ["crm","inventory","calendar","gmail"]\n}' },
-    { id: 's2', name: 'composio.tools.discover', left: 16, width: 9, ms: '290ms', status: 'ok', args: '{\n  "connections": ["gmail","google_calendar","rentalcrm"]\n}', result: '{\n  "tools": 24,\n  "auth": "all sessions valid"\n}' },
-    { id: 's3', name: 'crm.query', left: 25, width: 8, ms: '350ms', status: 'ok', args: '{\n  "object": "Reservation",\n  "account": "ABC Construction"\n}', result: '{\n  "records": 1,\n  "id": "R-2118",\n  "unit": "184"\n}' },
-    { id: 's4', name: 'inventory.check', left: 33, width: 10, ms: '420ms', status: 'ok', args: '{\n  "unit": "184",\n  "window": "2026-08-14/2026-08-17"\n}', result: '{\n  "available": false,\n  "conflict": "R-2209"\n}' },
-    { id: 's5', name: 'agentguard.simulate', left: 43, width: 16, ms: '690ms', status: 'shadow', args: '{\n  "mode": "shadow",\n  "actions": 5\n}', result: '{\n  "diffs": 5,\n  "side_effects": 0,\n  "violations": 1\n}' },
-    { id: 's6', name: 'calendar.update', left: 59, width: 22, ms: '1.10s', status: 'retry 2/3', args: '{\n  "event": "dlv-184",\n  "start": "2026-08-14T07:00"\n}', result: '{\n  "error": "429 rateLimitExceeded",\n  "retry_after": "30s"\n}' },
-    { id: 's7', name: 'gmail.send', left: 81, width: 14, ms: '480ms', status: 'ok', args: '{\n  "to": "marcus.hale@abcconstruction.com",\n  "template": "rental-reschedule"\n}', result: '{\n  "sent": 1,\n  "checkpoint": "ck-8812-03"\n}' }
-  ];
+  spanDefs = runTrace();
 
   faultDefs = FAULTS;
 
   invariantDefs = invariantStatus();
 
-  sagaDefs = [
-    { step: 'inventory.reserve — #184', state: 'committed', undo: 'Reservation released; unit returned to Wed–Sat.' },
-    { step: 'crm.update — R-2118', state: 'committed', undo: 'Stage reverted to Scheduled; last_touch restored.' },
-    { step: 'calendar.update — dlv-184', state: 'failed', undo: 'Nothing to undo — the write never landed.' },
-    { step: 'gmail.send — Marcus Hale', state: 'not run', undo: 'Skipped; no notice went out.' }
-  ];
+  sagaDefs = runSaga().steps;
 
-  /**
-   * Canary metrics, measured from the suite rather than quoted. Only what the
-   * harness actually observes appears here — the prototype's "policy errors"
-   * and "recovery rate" rows are gone because nothing measures them yet.
-   */
   get canaryDefs() {
     const m = SUITE.metrics;
     const pct = n => Math.round((n / m.cases) * 100) + '%';

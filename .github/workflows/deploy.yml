@@ -25,6 +25,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # These gate the deploy — a broken harness should not ship.
+      - run: npm test
       # Informational only. In a real deployment the replay suite would gate
       # the release, but this repo's candidate planner regresses two cases on
       # purpose — that is the thing being demonstrated — so a blocking gate
