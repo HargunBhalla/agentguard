@@ -9,7 +9,13 @@ This is an interactive prototype of the operator console, built around a single
 worked scenario: a rental-yard agent moving an excavator reservation to Friday,
 updating the CRM, and notifying the customer.
 
+**[Live demo →](https://hargunbhalla.github.io/agentguard/)**
+
 ## Running it
+
+The demo above is the whole prototype, not a cut-down build — the harness is
+framework-free and runs in the browser, so every tab really executes. Run it
+locally to change it:
 
 ```sh
 npm install
