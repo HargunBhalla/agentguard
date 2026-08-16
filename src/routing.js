@@ -6,7 +6,7 @@
  * be linked to directly. The hash is used in preference to a path because
  * Pages serves static files — a path route would 404 on refresh.
  */
-export const TABS = ['pipeline', 'preflight', 'trace', 'chaos', 'replay'];
+export const TABS = ['pipeline', 'preflight', 'trace', 'chaos', 'evals'];
 
 export const DEFAULT_TAB = 'pipeline';
 

@@ -53,10 +53,6 @@ npm test         # the harness's own tests
 npm run eval     # exits non-zero if the candidate regresses a case
 ```
 
-```sh
-npm run eval     # exits non-zero if the candidate regresses a case
-```
-
 A run works like this: each case seeds a **shadow world** (inventory, calendar,
 CRM, mail), the planner drives it through an **instrumented tool API** that
 records every call, and the world it leaves behind is checked against

@@ -1,131 +1,181 @@
-import { createWorld } from './world.js';
-import { makeTools } from './tools.js';
+import { createWorld, project } from './world.js';
+import { makeOps } from './ops.js';
+import { makeInjector } from './faults.js';
 import { checkInvariants } from './invariants.js';
+import { evaluate, POLICIES } from './policies.js';
+import { planCompensation } from './recovery.js';
+import { scoreRun, aggregate, METRIC_ROWS, isRegression } from './metrics.js';
 import { CASES } from './cases.js';
-import { v14, v15 } from './planners.js';
+import { v18, v19, BUILDS } from './agents.js';
+import { hubspot, ADAPTERS, adapterById } from './adapters.js';
 
-export { CASES, v14, v15 };
+export { CASES, v18, v19, BUILDS, ADAPTERS, adapterById, METRIC_ROWS };
 export { INVARIANTS } from './invariants.js';
+export { POLICIES } from './policies.js';
+export { aggregate, formatMetric, isRegression } from './metrics.js';
 
-/** Cost of the compensating saga that runs when a case leaves the world dirty. */
-const ROLLBACK_MS = 260;
+/** What a compensating rollback costs when a run leaves the CRM wrong. */
+const ROLLBACK_MS = 340;
 
 /**
- * Replay one case against one planner.
+ * Replay one case against one build on one CRM.
  *
- * The planner runs against a fresh shadow world, every tool call is recorded,
- * and the world it leaves behind is checked against the invariants. A run that
- * violates one also pays for the rollback that a real deployment would trigger,
- * which is why failing cases come out slower as well as wrong.
+ * The agent runs against a fresh shadow account, every operation is recorded,
+ * and the CRM it leaves behind is checked three ways: against the invariants,
+ * against the policy engine, and against the state the case said a correct run
+ * produces. A run that leaves the account wrong also pays for the rollback a
+ * real deployment would trigger, so a broken case reports slower as well as
+ * incorrect.
  */
-export function runCase(testCase, planner) {
+export function runCase(testCase, build, { adapter = hubspot, policies = POLICIES } = {}) {
   const world = createWorld(testCase.seed);
+  const checkpoint = project(world);
   const trace = [];
-  const tools = makeTools(world, trace);
+  const hook = testCase.fault ? makeInjector(testCase.fault) : null;
+  const ops = makeOps(world, trace, { adapter, hook });
 
-  let error = null;
+  let report;
   try {
-    planner.run(testCase.goal, tools);
-  } catch (e) {
-    error = e.message;
+    report = build.run(testCase.goal, ops);
+  } catch (err) {
+    // An error that escaped the agent's own handling is itself a finding.
+    report = { retries: 0, halted: true, skipped: [], errors: [{ code: err.code ?? null, message: err.message }], reason: err.message };
   }
 
-  const violations = error ? [{ id: 'planner_error', expr: 'run completes', detail: error }] : checkInvariants(world);
-  const ms = trace.reduce((sum, s) => sum + s.ms, 0) + (violations.length ? ROLLBACK_MS : 0);
+  const violations = checkInvariants(world);
+  const policyHits = evaluate({ before: checkpoint, after: project(world), world, trace, adapter }, policies);
+  const ms = trace.reduce((n, s) => n + s.ms, 0) + (violations.length ? ROLLBACK_MS : 0);
+
+  const plan = planCompensation(world, adapter);
+  const unrecoverable = plan.filter((s) => s.class === 'irreversible');
+
+  const score = scoreRun({ world, trace, report, violations, policyHits, ms }, testCase);
 
   return {
     case: testCase.name,
-    planner: planner.id,
-    pass: violations.length === 0,
+    caseId: testCase.id,
+    build: build.id,
+    adapter: adapter.id,
+    pass: violations.length === 0 && score.misses.length === 0,
     violations,
+    policyHits: policyHits.map((h) => ({ id: h.policy.id, name: h.policy.name, reasons: h.reasons })),
     trace,
-    ms,
+    report,
     world,
+    checkpoint,
+    ms,
+    score,
+    // What a rollback could not put back. On a clean run this is empty; on a
+    // run that merged the wrong records it is the whole point.
+    unrecoverable: unrecoverable.map((s) => s.detail),
   };
 }
 
-/** Replay every case against one planner. */
-export function runSuite(planner, cases = CASES) {
-  return cases.map((c) => runCase(c, planner));
+export function runSuite(build, { adapter = hubspot, cases = CASES } = {}) {
+  return cases.map((c) => runCase(c, build, { adapter }));
 }
 
 /**
- * Find the first step where two runs stop agreeing. Steps are compared on the
- * tool called and the metadata it reported, so a differing argument counts as
- * divergence even when the same tool was used.
+ * The first step where two runs stop agreeing. Compared on the operation, the
+ * record and the arguments that decide behaviour, so the same operation against
+ * a different record — or with a version attached rather than not — counts as
+ * divergence.
  */
 function divergenceIndex(a, b) {
+  const sig = (s) =>
+    s && `${s.op}:${s.id ?? s.type ?? ''}:${s.args?.to ?? ''}:${s.args?.ifVersion ?? 'none'}:${s.status}`;
   const n = Math.max(a.length, b.length);
-  for (let i = 0; i < n; i++) {
-    const x = a[i];
-    const y = b[i];
-    if (!x || !y || x.tool !== y.tool || x.meta !== y.meta) return i;
-  }
+  for (let i = 0; i < n; i++) if (sig(a[i]) !== sig(b[i])) return i;
   return -1;
 }
 
 /**
- * Replay the suite against both planners and pair the results up — this is what
- * the Replay tab renders, and what the deployment gate is a decision about.
+ * Replay the suite against both builds on one CRM and pair the results up.
+ * This is what the build-comparison screen renders and what the deployment gate
+ * is a decision about.
  */
-export function compareSuites(baseline = v14, candidate = v15, cases = CASES) {
+export function compareBuilds(baseline = v18, candidate = v19, { adapter = hubspot, cases = CASES } = {}) {
   const results = cases.map((testCase) => {
-    const base = runCase(testCase, baseline);
-    const cand = runCase(testCase, candidate);
-    const at = divergenceIndex(base.trace, cand.trace);
+    const base = runCase(testCase, baseline, { adapter });
+    const cand = runCase(testCase, candidate, { adapter });
     const delta = cand.ms - base.ms;
 
     return {
+      id: testCase.id,
       name: testCase.name,
-      actions: testCase.actions,
+      summary: testCase.summary,
+      fault: testCase.fault ?? null,
       baseline: base,
       candidate: cand,
-      divergesAt: at,
+      divergesAt: divergenceIndex(base.trace, cand.trace),
       delta,
       deltaLabel: `${delta > 0 ? '+' : delta < 0 ? '−' : '±'}${Math.abs(delta)}ms`,
       regressed: base.pass && !cand.pass,
+      brokenInBoth: !base.pass && !cand.pass,
     };
   });
 
-  const regressions = results.filter((r) => r.regressed).length;
-  const sum = (rs, k) => rs.reduce((n, r) => n + r[k].ms, 0);
+  const baseMetrics = aggregate(results.map((r) => r.baseline.score));
+  const candMetrics = aggregate(results.map((r) => r.candidate.score));
 
   return {
+    adapter,
     baseline,
     candidate,
     results,
-    regressions,
-    metrics: {
-      cases: results.length,
-      baselinePassed: results.filter((r) => r.baseline.pass).length,
-      candidatePassed: results.filter((r) => r.candidate.pass).length,
-      baselineCalls: results.reduce((n, r) => n + r.baseline.trace.length, 0),
-      candidateCalls: results.reduce((n, r) => n + r.candidate.trace.length, 0),
-      baselineMs: sum(results, 'baseline'),
-      candidateMs: sum(results, 'candidate'),
-      violations: results.reduce((n, r) => n + r.candidate.violations.length, 0),
-    },
+    regressions: results.filter((r) => r.regressed).length,
+    brokenInBoth: results.filter((r) => r.brokenInBoth).length,
+    metrics: { baseline: baseMetrics, candidate: candMetrics },
+    movedWrong: METRIC_ROWS.filter((row) => isRegression(row, baseMetrics, candMetrics)),
   };
+}
+
+/**
+ * The same suite against every CRM.
+ *
+ * This is the reason the adapters exist. A build can be clean on one provider
+ * and regress on another, because what a provider will let you take back is not
+ * uniform — and a rollout decision made on one CRM's numbers is a rollout
+ * decision made blind for the other two.
+ */
+export function compareAcrossCrms(baseline = v18, candidate = v19, { cases = CASES, adapters = ADAPTERS } = {}) {
+  return adapters.map((adapter) => compareBuilds(baseline, candidate, { adapter, cases }));
 }
 
 /** Prose explanation of one case's outcome, for the comparison panel. */
 export function verdictFor(row) {
+  const { candidate, baseline } = row;
+
   if (row.regressed) {
-    const v = row.candidate.violations[0];
+    // Every check that failed, not just whichever is declared first. A run can
+    // merge the wrong records and clobber a rep's edit in the same pass, and
+    // naming one of the two sends somebody to debug half the problem.
+    const causes = candidate.violations.map((v) => `${v.expr} failed — ${v.detail}`);
+    if (!causes.length) {
+      const miss = candidate.score.misses[0];
+      causes.push(`the CRM ended with ${miss.field} = ${miss.got} where a correct run leaves ${miss.want}`);
+    }
+    const permanent = candidate.unrecoverable.length
+      ? ` ${candidate.unrecoverable.length} of its writes are permanent on ${candidate.adapter} and no rollback reaches them.`
+      : ` The run was rolled back, which is where the ${row.deltaLabel} went.`;
+    return `${candidate.build} diverges at step ${row.divergesAt + 1} and leaves the account in a state the checks reject: ${causes.join('; and ')}.${permanent}`;
+  }
+
+  if (row.brokenInBoth) {
+    const miss = candidate.score.misses[0];
     return (
-      `${row.candidate.planner} diverges at step ${row.divergesAt + 1} and leaves the world in a state ` +
-      `the invariants reject — ${v.expr} failed: ${v.detail}. The run was rolled back, ` +
-      `which is where the ${row.deltaLabel} went.`
+      `Both builds fail this case, so it is not a regression — it is a defect neither version fixed. ` +
+      (miss ? `The account ends with ${miss.field} = ${miss.got} where it should be ${miss.want}.` : '')
     );
   }
-  if (!row.baseline.pass && !row.candidate.pass) {
-    return 'Both planners fail this case, so it is not a regression — the case itself needs attention.';
-  }
+
   if (row.divergesAt === -1) {
-    return `Both planners produce the same calls and the same final state. Latency moved ${row.deltaLabel}.`;
+    return `Both builds issue the same calls and leave the same account behind. Latency moved ${row.deltaLabel}.`;
   }
+
   return (
-    `The planners diverge at step ${row.divergesAt + 1} but reach the same final state, and every ` +
-    `invariant holds. Latency moved ${row.deltaLabel}.`
+    `The builds diverge at step ${row.divergesAt + 1} — ${baseline.trace.length} calls against ` +
+    `${candidate.trace.length} — but reach the same final state, and every check holds. ` +
+    `Latency moved ${row.deltaLabel}.`
   );
 }

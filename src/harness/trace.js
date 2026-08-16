@@ -1,134 +1,123 @@
-import { createWorld } from './world.js';
-import { makeTools } from './tools.js';
-import { SEED, PROPOSAL, rehearseAll } from './shadow.js';
-import { runChaos } from './chaos.js';
+import { runCase } from './index.js';
+import { caseById } from './cases.js';
+import { rehearseAll } from './shadow.js';
+import { planCompensation } from './recovery.js';
+import { v19 } from './agents.js';
+import { hubspot } from './adapters.js';
 
 /**
- * Run 8812, as the trace view shows it.
+ * One run, as the trace view shows it.
  *
- * The connector calls are executed for real against a shadow copy, so their
- * arguments and results are what the tools actually produced. The three spans
- * that have no tool behind them — planning, tool discovery, and the shadow
- * simulation itself — are derived instead: the simulate span reports the diff
- * and violation counts the pre-flight rehearsal genuinely found.
+ * The connector spans are executed for real against a shadow account, so their
+ * arguments, results and native requests are what the operations genuinely
+ * produced. Three spans have no operation behind them — planning, tool
+ * discovery, and the shadow rehearsal itself — and those are derived rather
+ * than invented: the rehearsal span reports the diff and violation counts the
+ * pre-flight gate actually found.
  */
-export function runTrace() {
-  const world = createWorld(SEED);
-  const trace = [];
-  const t = makeTools(world, trace);
+export function runTrace({ adapter = hubspot, build = v19, caseId = 'c1' } = {}) {
+  const testCase = caseById(caseId);
+  const run = runCase(testCase, build, { adapter });
 
-  // The planner's own reads, executed against the shadow world.
-  t.crm.query({
-    candidate: { email: 'marcus.hale@abcconstruction.com' },
-    threshold: 0.9,
-  });
-  t.inventory.check({ unit: '184', from: '2026-08-14', to: '2026-08-17', perDay: true, ignore: 'R-2118' });
-
-  const rehearsed = rehearseAll();
+  const rehearsed = rehearseAll({ adapter });
   const diffs = rehearsed.reduce((n, a) => n + a.diff.length, 0);
-  const violations = rehearsed.filter((a) => a.trips.length).length;
+  const blocked = rehearsed.filter((a) => a.trips.length).length;
 
-  // Counted off the tool surface rather than quoted.
-  const toolCount = Object.values(makeTools(createWorld(), [])).reduce(
-    (n, group) => n + Object.keys(group).length,
-    0
-  );
-
-  const connectorSpans = trace.map((s) => ({ ...s, status: 'ok' }));
+  const connectorSpans = run.trace.map((s) => ({
+    name: `${s.op}${s.id ? ` · ${s.id}` : ''}`,
+    ms: s.ms,
+    status: s.status === 'error' ? `${s.error.code} ${s.error.transient ? 'retry' : 'fatal'}` : s.result?.noop ? 'no-op' : s.result?._partial ? 'partial' : 'ok',
+    args: s.args,
+    result: s.status === 'error' ? s.error : s.result,
+    native: `${s.native.method} ${s.native.path}`,
+    class: s.class,
+  }));
 
   const spans = [
     {
-      tool: 'llm.plan',
-      ms: 820,
+      name: 'llm.plan',
+      ms: 940,
       status: 'ok',
-      args: { goal: 'move ABC excavator to Friday, update salesperson, notify customer' },
-      result: { steps: PROPOSAL.length, tools: [...new Set(PROPOSAL.map((a) => a.tool.split('.')[0]))] },
+      args: { goal: testCase.goal, build: build.id, settings: build.settings },
+      result: { steps: run.trace.length, operations: [...new Set(run.trace.map((s) => s.op))] },
     },
     {
-      tool: 'composio.tools.discover',
-      ms: 290,
+      name: 'composio.tools.discover',
+      ms: 310,
       status: 'ok',
-      args: { connections: ['gmail', 'google_calendar', 'rentalcrm'] },
-      result: { tools: toolCount, auth: 'all sessions valid' },
+      args: { connection: adapter.id, objects: Object.keys(adapter.objects).filter((t) => adapter.supports(t)) },
+      result: {
+        tools: 10,
+        unsupported: Object.keys(adapter.objects).filter((t) => !adapter.supports(t)),
+        auth: 'session valid',
+      },
+    },
+    {
+      name: 'agentguard.shadow',
+      ms: 720,
+      status: blocked ? 'held' : 'ok',
+      args: { mode: 'shadow', proposed: rehearsed.length, crm: adapter.label },
+      result: { diffs, side_effects: 0, held: blocked },
     },
     ...connectorSpans,
     {
-      tool: 'agentguard.simulate',
-      ms: 690,
-      status: 'shadow',
-      args: { mode: 'shadow', actions: PROPOSAL.length },
-      result: { diffs, side_effects: 0, violations },
+      name: 'agentguard.verify',
+      ms: 260,
+      status: run.pass ? 'ok' : 'failed',
+      args: { assertions: Object.keys(testCase.expect || {}).length },
+      result: {
+        state_accuracy: `${(run.score.stateAccuracy * 100).toFixed(1)}%`,
+        invariants_failed: run.violations.map((v) => v.id),
+        misses: run.score.misses.map((m) => `${m.field}: ${m.got} (want ${m.want})`),
+      },
     },
-    // The calendar write is the step the recorded run had to retry.
-    ...(() => {
-      const w2 = createWorld(SEED);
-      const tr2 = [];
-      makeTools(w2, tr2).calendar.update({ event: 'dlv-184', start: '2026-08-14T07:00' });
-      return tr2.map((s) => ({
-        ...s,
-        ms: 1100,
-        status: 'retry 2/3',
-        result: { error: '429 rateLimitExceeded', retry_after: '30s' },
-      }));
-    })(),
-    ...(() => {
-      const w3 = createWorld(SEED);
-      const tr3 = [];
-      makeTools(w3, tr3).gmail.send({
-        to: 'marcus.hale@abcconstruction.com',
-        template: 'rental-reschedule',
-      });
-      return tr3.map((s) => ({ ...s, status: 'ok', result: { ...s.result, checkpoint: 'ck-8812-03' } }));
-    })(),
   ];
 
   // Lay the spans out on a shared timeline, so the bars reflect real durations.
   const total = spans.reduce((n, s) => n + s.ms, 0);
   let at = 0;
-  return spans.map((s, i) => {
+  const laid = spans.map((s, i) => {
     const left = (at / total) * 100;
     at += s.ms;
     return {
       id: `s${i + 1}`,
-      name: s.tool,
+      name: s.name,
       left,
       width: (s.ms / total) * 100,
       ms: s.ms >= 1000 ? (s.ms / 1000).toFixed(2) + 's' : s.ms + 'ms',
       status: s.status,
+      cls: s.class ?? null,
+      native: s.native ?? null,
       args: JSON.stringify(s.args ?? {}, null, 2),
       result: JSON.stringify(s.result ?? {}, null, 2),
     };
   });
+
+  return { spans: laid, run, totalMs: total };
 }
 
 /**
- * The compensating saga, taken from a run whose retries all failed: whatever
- * had been committed when the budget ran out is what has to be undone.
+ * The compensating plan for a run, as the rollback panel shows it. Built from
+ * the audit log, so the steps are the writes that actually happened — and the
+ * ones with no inverse say so instead of claiming a clean restore.
  */
-export function runSaga() {
-  const { log } = runChaos({ fault: 'f1', stepId: 'calendar.update', mods: { persist: true } });
-  const failedAt = 'calendar.update';
-  const order = ['inventory.reserve', 'calendar.update', 'crm.update', 'gmail.send'];
-  const undo = {
-    'inventory.reserve': 'Reservation released; unit returned to Wed–Sat.',
-    'calendar.update': 'Nothing to undo — the write never landed.',
-    'crm.update': 'Stage reverted to Scheduled; last_touch restored.',
-    'gmail.send': 'Skipped; no notice went out.',
-  };
-  const labels = {
-    'inventory.reserve': 'inventory.reserve — #219',
-    'calendar.update': 'calendar.update — dlv-184',
-    'crm.update': 'crm.update — R-2118',
-    'gmail.send': 'gmail.send — Marcus Hale',
-  };
+export function runSaga({ adapter = hubspot, build = v19, caseId = 'c1' } = {}) {
+  const run = runCase(caseById(caseId), build, { adapter });
+  const plan = planCompensation(run.world, adapter);
 
-  const failedIndex = order.indexOf(failedAt);
   return {
-    log,
-    steps: order.map((tool, i) => ({
-      step: labels[tool],
-      state: i < failedIndex ? 'committed' : i === failedIndex ? 'failed' : 'not run',
-      undo: undo[tool],
+    steps: plan.map((s) => ({
+      step: `${s.entry.op} — ${s.entry.type} ${s.entry.id}`,
+      state: s.class === 'irreversible' ? 'no inverse' : s.action === 'delete' ? 'reversible' : 'compensable',
+      undo: s.detail,
+      color:
+        s.class === 'irreversible'
+          ? 'var(--color-accent-800)'
+          : s.class === 'compensable'
+            ? 'var(--color-neutral-800)'
+            : 'var(--color-neutral-700)',
     })),
+    unrecoverable: plan.filter((s) => s.class === 'irreversible').length,
+    clean: run.pass,
   };
 }
