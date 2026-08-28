@@ -7,7 +7,8 @@ import {
 import { makeOps, CrmError } from './ops.js';
 import { hubspot, salesforce, attio, ADAPTERS, adapterById } from './adapters.js';
 import { checkInvariants, INVARIANTS } from './invariants.js';
-import { evaluate, POLICIES, MERGE_CONFIDENCE, BULK_MUTATION_CAP } from './policies.js';
+import { evaluate, POLICIES, MERGE_CONFIDENCE, BULK_MUTATION_CAP, OUTCOMES, heaviest } from './policies.js';
+import { scorecard, THRESHOLDS, clears } from './scorecard.js';
 import { planCompensation, compensate, rollback, classify } from './recovery.js';
 import { makeInjector, FAULTS, faultById } from './faults.js';
 import { scoreRun, aggregate, duplicateActions, isRegression, formatMetric, METRIC_ROWS } from './metrics.js';
@@ -408,7 +409,7 @@ describe('policies', () => {
     const ids = POLICIES.map((p) => p.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const p of POLICIES) {
-      expect(['blocked', 'review']).toContain(p.sev);
+      expect(OUTCOMES).toContain(p.sev);
       expect(p.rule.length).toBeGreaterThan(0);
     }
   });
@@ -1000,5 +1001,66 @@ describe('verdictFor', () => {
   it('calls a shared defect a defect rather than a regression', () => {
     const row = comparison.results.find((r) => r.brokenInBoth);
     if (row) expect(verdictFor(row)).toMatch(/not a regression/);
+  });
+});
+
+describe('policy outcomes', () => {
+  it('orders the four outcomes by how much they restrain the run', () => {
+    expect(heaviest(['allow', 'warn'])).toBe('warn');
+    expect(heaviest(['warn', 'approve'])).toBe('approve');
+    expect(heaviest(['approve', 'block'])).toBe('block');
+    expect(heaviest([])).toBe('allow');
+  });
+
+  it('uses every rung of the ladder somewhere in the policy set', () => {
+    const used = new Set(POLICIES.map((p) => p.sev));
+    expect([...used].sort()).toEqual(['approve', 'block', 'warn']);
+  });
+});
+
+describe('deployment gate', () => {
+  const perfect = {
+    stateAccuracy: 1, policyViolationRate: 0, recoverySuccessRate: 1,
+    incorrectMutationRate: 0, duplicateActionRate: 0, taskCompletionRate: 1,
+  };
+
+  it('passes a build that clears every bar, and scores it 100', () => {
+    const card = scorecard(perfect);
+    expect(card.verdict).toBe('pass');
+    expect(card.score).toBe(100);
+    expect(card.failed).toEqual([]);
+  });
+
+  it('blocks on a single missed threshold however good the rest are', () => {
+    const card = scorecard({ ...perfect, stateAccuracy: 0.9 });
+    expect(card.verdict).toBe('block');
+    expect(card.failed.map((r) => r.key)).toEqual(['stateAccuracy']);
+    // The score stays high — the verdict is the conjunction, not the score.
+    expect(card.score).toBeGreaterThan(90);
+  });
+
+  it('counts a critical miss separately', () => {
+    const card = scorecard({ ...perfect, incorrectMutationRate: 0.2 });
+    expect(card.criticalFailures).toBe(1);
+  });
+
+  it('scores a near miss above a wide one', () => {
+    const near = scorecard({ ...perfect, stateAccuracy: 0.97 }).score;
+    const wide = scorecard({ ...perfect, stateAccuracy: 0.4 }).score;
+    expect(near).toBeGreaterThan(wide);
+  });
+
+  it('treats an unmeasured metric as clearing rather than failing', () => {
+    const card = scorecard({ ...perfect, recoverySuccessRate: null });
+    expect(card.verdict).toBe('pass');
+  });
+
+  it('reads each threshold in its declared direction', () => {
+    const up = THRESHOLDS.find((r) => r.better === 'up');
+    const down = THRESHOLDS.find((r) => r.better === 'down');
+    expect(clears(up, up.bar)).toBe(true);
+    expect(clears(up, up.bar - 0.01)).toBe(false);
+    expect(clears(down, down.bar)).toBe(true);
+    expect(clears(down, down.bar + 0.01)).toBe(false);
   });
 });

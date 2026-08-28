@@ -179,3 +179,5 @@ export function verdictFor(row) {
     `Latency moved ${row.deltaLabel}.`
   );
 }
+
+export { scorecard, THRESHOLDS, clears } from './scorecard.js';

@@ -29,12 +29,27 @@ const MUTATIONS = new Set([
   'assign_owner', 'merge_records', 'create_task', 'add_note',
 ]);
 
+/**
+ * The four outcomes a policy can return, ordered by how much they restrain the
+ * run. A rehearsal's verdict is the heaviest outcome any policy reached, so
+ * this order is the comparison — not a list of special cases.
+ *
+ *   allow    nothing objected
+ *   warn     advisory: recorded on the trace, does not hold the call
+ *   approve  a human has to sign the call off before it is issued
+ *   block    the call is never issued
+ */
+export const OUTCOMES = ['allow', 'warn', 'approve', 'block'];
+export const OUTCOME_LABEL = { allow: 'allow', warn: 'warn', approve: 'require approval', block: 'block' };
+export const heaviest = (outcomes) =>
+  outcomes.reduce((worst, o) => (OUTCOMES.indexOf(o) > OUTCOMES.indexOf(worst) ? o : worst), 'allow');
+
 export const POLICIES = [
   {
     id: 'p1',
     name: 'Never delete an enterprise account',
-    mode: 'hard block',
-    sev: 'blocked',
+    mode: 'block',
+    sev: 'block',
     rule: 'delete(company) => tier != enterprise',
     test: ({ world }) =>
       (world.audit || [])
@@ -45,8 +60,8 @@ export const POLICIES = [
   {
     id: 'p2',
     name: 'Closed Won cannot move backwards',
-    mode: 'hard block',
-    sev: 'blocked',
+    mode: 'block',
+    sev: 'block',
     rule: 'stage_change(d) => index(to) >= index(from) or from != Closed Won',
     test: ({ world }) =>
       (world.audit || [])
@@ -58,8 +73,8 @@ export const POLICIES = [
   {
     id: 'p3',
     name: `Merging records requires confidence > ${MERGE_CONFIDENCE}`,
-    mode: 'hard block',
-    sev: 'blocked',
+    mode: 'block',
+    sev: 'block',
     rule: `merge(a, b) => confidence(a, b) > ${MERGE_CONFIDENCE}`,
     test: ({ world }) =>
       (world.merges || [])
@@ -70,8 +85,8 @@ export const POLICIES = [
   {
     id: 'p4',
     name: `Deals over $${(HIGH_VALUE / 1000).toFixed(0)}K need approval before a stage change`,
-    mode: 'hold for review',
-    sev: 'review',
+    mode: 'require approval',
+    sev: 'approve',
     rule: `stage_change(d) and amount(d) >= ${HIGH_VALUE} => approved_by != None`,
     test: ({ world }) => {
       const amount = Object.fromEntries(all(world, 'deal').map((d) => [d.id, d.amount]));
@@ -84,8 +99,8 @@ export const POLICIES = [
   {
     id: 'p5',
     name: 'No overwrite of a record that changed after it was read',
-    mode: 'hard block',
-    sev: 'blocked',
+    mode: 'block',
+    sev: 'block',
     rule: 'write(r) => version(r) == version_read(r)',
     test: ({ world }) => {
       const audit = world.audit || [];
@@ -107,8 +122,8 @@ export const POLICIES = [
   {
     id: 'p6',
     name: `No unattended batch over ${BULK_MUTATION_CAP} mutations`,
-    mode: 'hold for review',
-    sev: 'review',
+    mode: 'warn',
+    sev: 'warn',
     rule: `count(mutations) <= ${BULK_MUTATION_CAP}`,
     test: ({ trace }) => {
       const n = trace.filter((s) => MUTATIONS.has(s.op) && s.status === 'ok').length;
@@ -119,8 +134,8 @@ export const POLICIES = [
   {
     id: 'p7',
     name: 'Irreversible operations need approval',
-    mode: 'hold for review',
-    sev: 'review',
+    mode: 'require approval',
+    sev: 'approve',
     rule: 'reversibility(op, crm) == irreversible => approved_by != None',
     // Reads the adapter, not the operation. Deleting a record is recoverable on
     // HubSpot and Salesforce and permanent on Attio, so the same proposed call

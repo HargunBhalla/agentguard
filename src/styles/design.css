@@ -257,7 +257,24 @@
   --color-accent-2-800: #573d14;
   --color-accent-2-900: #382810;
 
+  /* Surfaces — three planes: page ground, primary panel, nested row. */
+  --color-panel: #ffffff;
+  --color-panel-2: #faf9f7;
+  --color-border: #e6e5e1;
+  --color-text-2: #71716c;
+
+  /* Semantic status — subdued, not SaaS-bright. Amber is reserved for
+     held / active / injected, so it stops competing with everything else. */
+  --color-pass: #4f7355;
+  --color-held: var(--color-accent);
+  --color-fail: #8c4a3f;
+  --color-pending: var(--color-neutral-500);
+
   --font-heading: "Cormorant Garamond", system-ui, sans-serif;
+  /* The serif is an accent for display type only; the interface runs on a
+     clean sans, self-hosted-free because it is the system stack. */
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading-weight: 600; /* review round 3: bold retired — semibold is the
      interface headings' ceiling (they need the weight at small sizes); display
      text goes lighter still, to the normal cut (see the deck) */
@@ -284,7 +301,7 @@
 body {
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: var(--font-body);
+  font-family: var(--font-ui);
 }
 h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); }
 
@@ -298,7 +315,7 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: var(--font-headi
    ══════════════════════════════════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
+body { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; -webkit-font-smoothing: antialiased; }
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading); font-weight: var(--font-heading-weight);
   line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 var(--space-2);
