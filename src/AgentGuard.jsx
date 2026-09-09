@@ -169,8 +169,8 @@ export default class AgentGuard extends React.Component {
       ['pipeline', 'Overview'], ['preflight', 'Simulation & policy'], ['trace', 'Trace'],
       ['chaos', 'Failure & recovery'], ['evals', 'Replay & gate'],
     ].map(([id, label]) => ({
-      label, go: () => this.goTab(id),
-      bg: st.tab === id ? 'var(--color-neutral-200)' : 'transparent',
+      label, go: () => this.goTab(id), active: st.tab === id,
+      bg: st.tab === id ? 'var(--color-panel)' : 'transparent',
       color: st.tab === id ? 'var(--color-text)' : 'var(--color-text-2)',
     }));
 
@@ -482,52 +482,57 @@ export default class AgentGuard extends React.Component {
     const v = this.renderVals();
     const S = {
       page: css(`height:100vh;display:flex;flex-direction:column;background:var(--color-bg);font-family:var(--font-ui)`),
-      head: css(`display:flex;align-items:center;justify-content:space-between;gap:18.4px;padding:13.8px 32px;background:var(--color-panel);border-bottom:1px solid var(--color-border);flex:none`),
-      kicker: css(`font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-2)`),
-      eyebrow: css(`font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-2);padding-bottom:6px`),
-      h1: css(`font-family:var(--font-ui);font-weight:560;letter-spacing:-.012em;font-size:24px;margin:4.6px 0 0;line-height:1.2`),
+      head: css(`display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 20px;background:var(--color-panel);border-bottom:1px solid var(--color-border);flex:none`),
+      kicker: css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2)`),
+      eyebrow: css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2);padding-bottom:6px`),
+      h1: css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.015em;font-size:24px;margin:4px 0 0;line-height:1.2`),
       body: css(`font-size:15px;line-height:1.65;max-width:78ch;margin:11px 0 0;color:var(--color-text-2)`),
-      btn: css(`font-family:var(--font-ui);font-size:13px;padding:9.2px 22px;border:1px solid var(--color-accent);color:var(--color-accent-700);background:transparent;border-radius:var(--radius-md);cursor:pointer`),
-      btn2: css(`font-family:var(--font-ui);font-size:13px;padding:9.2px 22px;border:1px solid var(--color-neutral-400);color:var(--color-neutral-800);background:transparent;border-radius:var(--radius-md);cursor:pointer`),
-      sel: css(`font-family:var(--font-ui);font-size:13px;padding:7px 9.2px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-panel-2);color:var(--color-text)`),
-      lab: css(`font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-2)`),
-      pre: css(`margin:0;font-family:var(--font-mono);font-size:12.5px;line-height:1.7;background:var(--color-panel-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:11px;white-space:pre-wrap;color:var(--color-neutral-800);overflow:auto`),
-      card: css(`background:var(--color-panel);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:18.4px`),
+      btn: css(`font-family:var(--font-ui);font-size:13px;font-weight:500;padding:7px 14px;border:1px solid var(--color-accent);color:#fff;background:var(--color-accent);border-radius:var(--radius-md);cursor:pointer`),
+      btn2: css(`font-family:var(--font-ui);font-size:13px;font-weight:500;padding:7px 14px;border:1px solid var(--color-border);color:var(--color-text);background:var(--color-panel);border-radius:var(--radius-md);cursor:pointer`),
+      sel: css(`font-family:var(--font-ui);font-size:13px;padding:5px 8px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-panel);color:var(--color-text)`),
+      lab: css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2)`),
+      pre: css(`margin:0;font-family:var(--font-mono);font-size:12px;line-height:1.7;background:var(--color-panel-2);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:11px;white-space:pre-wrap;color:var(--color-neutral-800);overflow:auto`),
+      card: css(`background:var(--color-panel);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:16px`),
       // A panel is the second plane: a surface with one border, and no lines
       // between the rows inside it.
       panelRaw: `background:var(--color-panel);border:1px solid var(--color-border);border-radius:var(--radius-lg)`,
       panel: css(`background:var(--color-panel);border:1px solid var(--color-border);border-radius:var(--radius-lg)`),
-      panelHead: css(`display:flex;align-items:baseline;justify-content:space-between;gap:13.8px;padding:13.8px 22px;border-bottom:1px solid var(--color-border);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-2)`),
-      th: css(`text-align:left;padding:11px 13.8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:560;color:var(--color-text-2);background:var(--color-panel-2)`),
-      td: css(`padding:11px 13.8px;border-top:1px solid var(--color-border)`),
+      panelHead: css(`display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--color-panel-2);border-bottom:1px solid var(--color-border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2)`),
+      th: css(`text-align:left;padding:9px 14px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:var(--color-text-2);background:var(--color-panel-2)`),
+      td: css(`padding:11px 12px;border-top:1px solid var(--color-border)`),
     };
 
     return (
       <div style={S.page}>
         <header style={S.head}>
-          <div style={css(`display:flex;align-items:baseline;gap:18.4px`)}>
+          <div style={css(`display:flex;align-items:center;gap:10px`)}>
             {/* A real anchor rather than a click handler, so the wordmark
                 behaves like a home link: keyboard-focusable, middle-clickable,
                 and it creates a history entry on its own. */}
             <a href="#pipeline" aria-label="AgentGuard — back to the pipeline"
-              style={css(`font-family:var(--font-heading);font-weight:600;font-size:23px;color:inherit;text-decoration:none;cursor:pointer`)}>
-              AgentGuard
+              style={css(`display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;cursor:pointer`)}>
+              <span aria-hidden="true" style={css(`width:22px;height:22px;flex:none;border-radius:6px;background:var(--color-neutral-900);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center`)}>A</span>
+              <span style={css(`font-weight:600;font-size:14px;letter-spacing:-.01em`)}>AgentGuard</span>
             </a>
-            <span style={css(`font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-2)`)}>
-              revenue-ops · staging
+            {/* The environment is a chip, not a caption: it is a fact about
+                where these runs executed, and it should read as one. */}
+            <span style={css(`font-size:12px;color:var(--color-text-2);background:var(--color-neutral-200);border-radius:var(--radius-sm);padding:2px 8px;white-space:nowrap`)}>
+              revenue-ops / staging
             </span>
           </div>
 
-          <nav style={css(`display:flex;gap:4.6px`)}>
+          {/* Segmented control: the group is the surface, the active tab is
+              the one lifted out of it. */}
+          <nav style={css(`display:flex;gap:2px;padding:2px;background:var(--color-neutral-200);border-radius:var(--radius-md)`)}>
             {v.tabs.map((t, i) => (
-              <button key={i} className="hv0" onClick={t.go}
-                style={css(`font-family:var(--font-ui);font-size:14px;padding:7px 13.8px;border-radius:var(--radius-md);cursor:pointer;border:0;background:${t.bg};color:${t.color}`)}>
+              <button key={i} onClick={t.go} aria-current={t.active ? 'page' : undefined}
+                style={css(`font-family:var(--font-ui);font-size:13px;font-weight:500;padding:5px 12px;border-radius:var(--radius-sm);cursor:pointer;border:0;white-space:nowrap;background:${t.bg};color:${t.color};box-shadow:${t.active ? 'var(--shadow-sm)' : 'none'}`)}>
                 {t.label}
               </button>
             ))}
           </nav>
 
-          <div style={css(`display:flex;align-items:center;gap:9.2px;font-size:13px;color:var(--color-text-2)`)}>
+          <div style={css(`display:flex;align-items:center;gap:8px;font-size:13px;color:var(--color-text-2)`)}>
             <select value={v.crm} onChange={v.setCrm} aria-label="CRM" style={S.sel}>
               {v.crms.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
             </select>
@@ -535,7 +540,7 @@ export default class AgentGuard extends React.Component {
               <option value="v1.8">v1.8 — current</option>
               <option value="v1.9">v1.9 — candidate</option>
             </select>
-            <span style={css(`width:7px;height:7px;border-radius:50%;background:var(--color-accent);animation:ag-pulse 2s infinite`)} />
+            <span style={css(`width:6px;height:6px;border-radius:50%;background:var(--color-pass);animation:ag-pulse 2s infinite`)} />
             <span style={css(`white-space:nowrap`)}>{v.fleet}</span>
           </div>
         </header>
@@ -546,9 +551,9 @@ export default class AgentGuard extends React.Component {
             <div style={css(`max-width:1280px;margin:0 auto`)}>
 
               {/* The run, not the architecture: what this evaluation found. */}
-              <div style={css(`display:flex;align-items:flex-start;justify-content:space-between;gap:27.6px;flex-wrap:wrap`)}>
+              <div style={css(`display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap`)}>
                 <div>
-                  <h1 style={css(`font-family:var(--font-heading);font-weight:400;font-size:32px;margin:0;line-height:1.15`)}>
+                  <h1 style={css(`font-family:var(--font-ui);font-weight:600;font-size:22px;letter-spacing:-.02em;margin:0;line-height:1.2`)}>
                     Evaluation run {v.run.id}
                   </h1>
                   <div style={css(`font-size:13px;color:var(--color-text-2);margin-top:5px`)}>{v.run.subtitle}</div>
@@ -559,17 +564,17 @@ export default class AgentGuard extends React.Component {
                 </div>
               </div>
 
-              <div style={css(`font-size:15px;line-height:1.6;color:var(--color-text-2);margin-top:13.8px;max-width:78ch`)}>
+              <div style={css(`font-size:15px;line-height:1.6;color:var(--color-text-2);margin-top:12px;max-width:78ch`)}>
                 {v.run.summary}
               </div>
 
               {/* Conventional LLM evals stop at the response. The chain below is
                   what this run is actually scored on. */}
-              <div style={css(`display:flex;align-items:center;gap:9.2px;flex-wrap:wrap;margin-top:18.4px;font-size:12.5px;color:var(--color-text-2)`)}>
+              <div style={css(`display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:16px;font-size:12px;color:var(--color-text-2)`)}>
                 {['Instruction', 'Agent decision', 'CRM tool call', 'Proposed state change', 'Policy validation', 'Failure handling', 'Final CRM state', 'Business correctness'].map((step, i) => (
                   <React.Fragment key={i}>
                     {i > 0 && <span style={css(`color:var(--color-neutral-400)`)}>→</span>}
-                    <span style={css(`background:var(--color-panel);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:4px 9.2px;white-space:nowrap`)}>{step}</span>
+                    <span style={css(`background:var(--color-panel);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:4px 8px;white-space:nowrap`)}>{step}</span>
                   </React.Fragment>
                 ))}
               </div>
@@ -577,9 +582,9 @@ export default class AgentGuard extends React.Component {
               {/* Tiles — one border around the group, none between. */}
               <div style={css(`display:grid;grid-template-columns:repeat(4,1fr);margin-top:22px;background:var(--color-panel);border:1px solid var(--color-border);border-radius:var(--radius-lg)`)}>
                 {v.run.tiles.map((t, i) => (
-                  <div key={i} style={css(`padding:18.4px 22px;${i ? 'border-left:1px solid var(--color-border);' : ''}`)}>
+                  <div key={i} style={css(`padding:16px 22px;${i ? 'border-left:1px solid var(--color-border);' : ''}`)}>
                     <div style={css(`font-size:30px;line-height:1.1;color:${t.color}`)}>{t.n}</div>
-                    <div style={css(`font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2);margin-top:5px`)}>{t.label}</div>
+                    <div style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2);margin-top:5px`)}>{t.label}</div>
                   </div>
                 ))}
               </div>
@@ -589,7 +594,7 @@ export default class AgentGuard extends React.Component {
                 {/* Execution path — a timeline, not an architecture diagram. */}
                 <div style={S.panel}>
                   <div style={S.panelHead}>Execution path</div>
-                  <div style={css(`padding:4px 22px 18.4px`)}>
+                  <div style={css(`padding:4px 22px 16px`)}>
                     {v.run.path.map((p, i) => (
                       <div key={i} style={css(`display:grid;grid-template-columns:18px 1fr;gap:11px`)}>
                         <div style={css(`display:flex;flex-direction:column;align-items:center`)}>
@@ -598,9 +603,9 @@ export default class AgentGuard extends React.Component {
                             <span style={css(`flex:1;width:1px;background:var(--color-border)`)} />
                           )}
                         </div>
-                        <div style={css(`padding-bottom:${i < v.run.path.length - 1 ? '18.4px' : '0'}`)}>
+                        <div style={css(`padding-bottom:${i < v.run.path.length - 1 ? '16px' : '0'}`)}>
                           <div style={css(`font-size:15px;font-weight:560;line-height:20px`)}>{p.name}</div>
-                          <div style={css(`font-size:12.5px;line-height:1.5;color:var(--color-text-2);margin-top:2px`)}>{p.note}</div>
+                          <div style={css(`font-size:12px;line-height:1.5;color:var(--color-text-2);margin-top:2px`)}>{p.note}</div>
                         </div>
                       </div>
                     ))}
@@ -623,14 +628,14 @@ export default class AgentGuard extends React.Component {
                     {v.stages.map((s, i) => (
                       <div key={i} className="hv0" onClick={s.go} role="button" tabIndex={0}
                         onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), s.go())}
-                        style={css(`cursor:pointer;display:grid;grid-template-columns:34px 1fr 18px;gap:13.8px;align-items:baseline;padding:11px 22px`)}>
+                        style={css(`cursor:pointer;display:grid;grid-template-columns:34px 1fr 18px;gap:12px;align-items:baseline;padding:11px 22px`)}>
                         <span style={css(`font-family:var(--font-mono);font-size:12px;color:var(--color-text-2)`)}>
                           {String(i + 1).padStart(2, '0')}
                         </span>
                         <span>
-                          <span style={css(`font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-2);display:block`)}>{s.name}</span>
+                          <span style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2);display:block`)}>{s.name}</span>
                           <span style={css(`font-size:15px;display:block;margin-top:3px`)}>{s.headline}</span>
-                          <span style={css(`font-size:12.5px;color:var(--color-text-2);display:block`)}>{s.detail}</span>
+                          <span style={css(`font-size:12px;color:var(--color-text-2);display:block`)}>{s.detail}</span>
                         </span>
                         <span style={css(`font-size:13px;color:${s.tone};text-align:right`)}>{s.glyph}</span>
                       </div>
@@ -640,15 +645,15 @@ export default class AgentGuard extends React.Component {
               </div>
 
               {/* Reference, not part of the run — kept below the fold. */}
-              <details style={css(`margin-top:27.6px`)}>
+              <details style={css(`margin-top:24px`)}>
                 <summary style={css(`cursor:pointer;font-size:13px;color:var(--color-text-2);padding:6px 0`)}>
                   CRM capabilities — where the three adapters differ
                 </summary>
-                <div style={css(`font-size:13px;line-height:1.6;color:var(--color-text-2);margin:9.2px 0 0;max-width:80ch`)}>
+                <div style={css(`font-size:13px;line-height:1.6;color:var(--color-text-2);margin:8px 0 0;max-width:80ch`)}>
                   An agent that is safe on one CRM is not automatically safe on another. The policy engine and the
                   recovery planner read these differences per adapter instead of assuming them.
                 </div>
-                <div style={css(`${S.panelRaw};margin-top:13.8px;overflow:hidden`)}>
+                <div style={css(`${S.panelRaw};margin-top:12px;overflow:hidden`)}>
                   <table style={css(`width:100%;border-collapse:collapse;font-size:14px`)}>
                     <thead><tr>
                       {['CRM', 'Lead object', 'Delete', 'Merge', 'Stages it cannot tell apart'].map((h, i) => (
@@ -658,10 +663,10 @@ export default class AgentGuard extends React.Component {
                     <tbody>
                       {v.capabilities.map((c, i) => (
                         <tr key={i}>
-                          <td style={css(`padding:11px 13.8px;border-top:1px solid var(--color-border);color:${c.current ? 'var(--color-accent-700)' : 'var(--color-text)'}`)}>{c.label}</td>
+                          <td style={css(`padding:11px 12px;border-top:1px solid var(--color-border);color:${c.current ? 'var(--color-accent-700)' : 'var(--color-text)'}`)}>{c.label}</td>
                           <td style={S.td}>{c.lead}</td>
-                          <td style={css(`padding:11px 13.8px;border-top:1px solid var(--color-border);color:${c.delColor}`)}>{c.del}</td>
-                          <td style={css(`padding:11px 13.8px;border-top:1px solid var(--color-border)`)}>{c.merge}</td>
+                          <td style={css(`padding:11px 12px;border-top:1px solid var(--color-border);color:${c.delColor}`)}>{c.del}</td>
+                          <td style={css(`padding:11px 12px;border-top:1px solid var(--color-border)`)}>{c.merge}</td>
                           <td style={S.td}>{c.collapsed}</td>
                         </tr>
                       ))}
@@ -675,16 +680,16 @@ export default class AgentGuard extends React.Component {
         {/* ---- Pre-flight -------------------------------------------------- */}
         {v.onPreflight && (
           <div style={css(`flex:1;min-height:0;display:flex;flex-direction:column`)}>
-            <div style={css(`display:flex;align-items:flex-end;justify-content:space-between;gap:27.6px;padding:18.4px 32px 13.8px`)}>
+            <div style={css(`display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:16px 32px 12px`)}>
               <div>
                 <div style={S.kicker}>Pre-flight review · {v.adapter.label}</div>
                 <h1 style={S.h1}>{v.actions.length} mutations awaiting review</h1>
                 <div style={css(`font-size:13px;color:var(--color-text-2);margin-top:5px;max-width:78ch`)}>{GOAL}</div>
               </div>
-              <div style={css(`display:flex;gap:13.8px;align-items:center`)}>
-                {v.simIdle && <button className="hv0" onClick={v.runSim} style={S.btn}>Run shadow execution</button>}
+              <div style={css(`display:flex;gap:12px;align-items:center`)}>
+                {v.simIdle && <button className="hvp" onClick={v.runSim} style={S.btn}>Run shadow execution</button>}
                 {v.simRunning && (
-                  <span style={css(`font-size:14px;color:var(--color-accent-700);display:flex;align-items:center;gap:9.2px`)}>
+                  <span style={css(`font-size:14px;color:var(--color-accent-700);display:flex;align-items:center;gap:8px`)}>
                     <span style={css(`width:80px;height:2px;background:var(--color-accent-200);overflow:hidden;display:inline-block`)}>
                       <span style={css(`display:block;width:30%;height:100%;background:var(--color-accent);animation:ag-sweep 1s linear infinite`)} />
                     </span>
@@ -698,36 +703,36 @@ export default class AgentGuard extends React.Component {
             </div>
 
             <div style={css(`flex:1;min-height:0;display:grid;grid-template-columns:340px 1fr 280px;border-top:1px solid var(--color-border)`)}>
-              <div style={css(`border-right:1px solid var(--color-border);background:var(--color-panel-2);overflow:auto;padding:13.8px`)}>
+              <div style={css(`border-right:1px solid var(--color-border);background:var(--color-panel-2);overflow:auto;padding:12px`)}>
                 {v.actions.map((a, i) => (
                   <div key={i} className="hv0" onClick={a.select}
-                    style={css(`cursor:pointer;padding:12px 13.8px;margin-bottom:6px;border-left:3px solid ${a.vc};border-radius:var(--radius-md);background:${a.cardBg}`)}>
-                    <div style={css(`display:flex;justify-content:space-between;align-items:baseline;gap:9.2px`)}>
-                      <span style={css(`font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-size:17px;font-weight:600`)}>{a.op}</span>
-                      <span style={css(`font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:${a.vc};white-space:nowrap`)}>{a.verdictLabel}</span>
+                    style={css(`cursor:pointer;padding:12px 12px;margin-bottom:6px;border-left:3px solid ${a.vc};border-radius:var(--radius-md);background:${a.cardBg}`)}>
+                    <div style={css(`display:flex;justify-content:space-between;align-items:baseline;gap:8px`)}>
+                      <span style={css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;font-size:17px;font-weight:600`)}>{a.op}</span>
+                      <span style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${a.vc};white-space:nowrap`)}>{a.verdictLabel}</span>
                     </div>
                     <div style={css(`font-size:13px;line-height:1.5;color:var(--color-text-2);margin-top:2px`)}>{a.summary}</div>
                     <div style={css(`font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:${a.classColor};margin-top:4px`)}>{a.reversibility}</div>
                   </div>
                 ))}
-                <div style={css(`font-size:12.5px;line-height:1.6;color:var(--color-text-2);border-top:1px solid var(--color-border);padding-top:9.2px;margin-top:13.8px`)}>
+                <div style={css(`font-size:12px;line-height:1.6;color:var(--color-text-2);border-top:1px solid var(--color-border);padding-top:8px;margin-top:12px`)}>
                   Every mutation proposed in one agent turn. None have run.
                 </div>
               </div>
 
               <div style={css(`overflow:auto;padding:22px 32px`)}>
-                <div style={css(`display:flex;align-items:baseline;justify-content:space-between;gap:18.4px`)}>
-                  <h2 style={css(`font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-weight:400;font-size:28px;margin:0`)}>{v.sel.op}</h2>
-                  <span style={css(`font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:${v.sel.vc};border:1px solid ${v.sel.vc};padding:3px 9.2px;border-radius:var(--radius-md);white-space:nowrap`)}>
+                <div style={css(`display:flex;align-items:baseline;justify-content:space-between;gap:16px`)}>
+                  <h2 style={css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.015em;font-size:28px;margin:0`)}>{v.sel.op}</h2>
+                  <span style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${v.sel.vc};border:1px solid ${v.sel.vc};padding:3px 8px;border-radius:var(--radius-md);white-space:nowrap`)}>
                     {v.sel.verdictLabel}
                   </span>
                 </div>
-                <p style={css(`font-size:15px;line-height:1.7;margin:9.2px 0 0;max-width:64ch`)}>{v.sel.detail}</p>
+                <p style={css(`font-size:15px;line-height:1.7;margin:8px 0 0;max-width:64ch`)}>{v.sel.detail}</p>
 
                 {v.hasRisk && (
-                  <div style={css(`margin-top:13.8px;background:var(--color-accent-100);border-left:3px solid var(--color-accent);border-radius:var(--radius-md);padding:13.8px 18.4px;max-width:70ch;animation:ag-in .3s ease both`)}>
-                    <div style={css(`font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-size:19px;color:var(--color-accent-800)`)}>{v.sel.risk}</div>
-                    <p style={css(`font-size:14px;line-height:1.7;margin:4.6px 0 0;color:var(--color-neutral-800)`)}>{v.sel.alt}</p>
+                  <div style={css(`margin-top:12px;background:var(--color-accent-100);border-left:3px solid var(--color-accent);border-radius:var(--radius-md);padding:12px 16px;max-width:70ch;animation:ag-in .3s ease both`)}>
+                    <div style={css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;font-size:19px;color:var(--color-accent-800)`)}>{v.sel.risk}</div>
+                    <p style={css(`font-size:14px;line-height:1.7;margin:4px 0 0;color:var(--color-neutral-800)`)}>{v.sel.alt}</p>
                   </div>
                 )}
 
@@ -735,23 +740,23 @@ export default class AgentGuard extends React.Component {
                   <div style={css(`margin-top:22px`)}>
                     <div style={S.eyebrow}>State diff — predicted</div>
                     {v.selDiff.map((d, i) => (
-                      <div key={i} style={css(`display:grid;grid-template-columns:200px 1fr 1fr;gap:13.8px;padding:9.2px 0;border-bottom:1px solid var(--color-border);font-size:14px;animation:ag-in .3s ease both`)}>
-                        <span style={css(`color:var(--color-text-2);font-family:var(--font-mono);font-size:12.5px`)}>{d.field}</span>
+                      <div key={i} style={css(`display:grid;grid-template-columns:200px 1fr 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--color-border);font-size:14px;animation:ag-in .3s ease both`)}>
+                        <span style={css(`color:var(--color-text-2);font-family:var(--font-mono);font-size:12px`)}>{d.field}</span>
                         <span style={css(`color:var(--color-text-2);text-decoration:line-through`)}>{d.before}</span>
                         <span style={css(`color:var(--color-accent-800)`)}>{d.after}</span>
                       </div>
                     ))}
-                    <div style={css(`font-size:12.5px;color:var(--color-text-2);margin-top:9.2px`)}>{v.sel.blast}</div>
+                    <div style={css(`font-size:12px;color:var(--color-text-2);margin-top:8px`)}>{v.sel.blast}</div>
                     <div style={css(`margin-top:11px`)}>
                       <div style={S.eyebrow}>Native requests on {v.adapter.label}</div>
                       {v.sel.native.map((n, i) => (
-                        <div key={i} style={css(`font-family:var(--font-mono);font-size:12.5px;color:var(--color-text-2);padding:5px 0`)}>{n}</div>
+                        <div key={i} style={css(`font-family:var(--font-mono);font-size:12px;color:var(--color-text-2);padding:5px 0`)}>{n}</div>
                       ))}
                     </div>
                   </div>
                 )}
                 {v.simNotDone && (
-                  <div style={css(`margin-top:22px;border:1px dashed var(--color-neutral-400);border-radius:var(--radius-md);padding:36.8px;text-align:center;font-size:14px;color:var(--color-text-2)`)}>
+                  <div style={css(`margin-top:22px;border:1px dashed var(--color-neutral-400);border-radius:var(--radius-md);padding:32px;text-align:center;font-size:14px;color:var(--color-text-2)`)}>
                     No diff yet. Run the shadow execution to see what would change.
                   </div>
                 )}
@@ -760,28 +765,28 @@ export default class AgentGuard extends React.Component {
                   <div style={S.eyebrow}>Policy verdict</div>
                   {v.selChecks.map((c, i) => (
                     <div key={i} style={css(`padding:8px 0;border-bottom:1px solid var(--color-border);font-size:14px`)}>
-                      <div style={css(`display:flex;justify-content:space-between;align-items:baseline;gap:9.2px`)}>
+                      <div style={css(`display:flex;justify-content:space-between;align-items:baseline;gap:8px`)}>
                         <span style={css(`color:${c.color}`)}>{c.name}</span>
-                        <span style={css(`font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:${c.color};white-space:nowrap`)}>{c.state}</span>
+                        <span style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${c.color};white-space:nowrap`)}>{c.state}</span>
                       </div>
                       {c.reason && (
-                        <div style={css(`font-size:12.5px;color:var(--color-accent-800);margin-top:2px`)}>{c.reason}</div>
+                        <div style={css(`font-size:12px;color:var(--color-accent-800);margin-top:2px`)}>{c.reason}</div>
                       )}
                     </div>
                   ))}
                 </div>
 
-                <div style={css(`display:flex;gap:9.2px;margin-top:22px;align-items:center;flex-wrap:wrap`)}>
-                  <button className="hv0" onClick={v.approve} style={S.btn}>Approve &amp; execute</button>
+                <div style={css(`display:flex;gap:8px;margin-top:22px;align-items:center;flex-wrap:wrap`)}>
+                  <button className="hvp" onClick={v.approve} style={S.btn}>Approve &amp; execute</button>
                   <button className="hv1" onClick={v.block} style={S.btn2}>Block</button>
                   <span style={css(`font-size:13px;color:var(--color-accent-700)`)}>{v.decisionNote}</span>
                 </div>
               </div>
 
-              <div style={css(`border-left:1px solid var(--color-border);background:var(--color-panel-2);padding:22px 18.4px;overflow:auto`)}>
-                <div style={css(`font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--color-text-2);margin-bottom:11px`)}>Active policies</div>
+              <div style={css(`border-left:1px solid var(--color-border);background:var(--color-panel-2);padding:22px 16px;overflow:auto`)}>
+                <div style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2);margin-bottom:11px`)}>Active policies</div>
                 {v.policies.map((p, i) => (
-                  <div key={i} onClick={p.toggle} style={css(`cursor:pointer;display:flex;gap:9.2px;align-items:flex-start;padding:9.2px 0;border-bottom:1px solid var(--color-border)`)}>
+                  <div key={i} onClick={p.toggle} style={css(`cursor:pointer;display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--color-border)`)}>
                     <span style={css(`flex:none;margin-top:4px;width:12px;height:12px;border-radius:2px;border:1px solid ${p.mark};background:${p.fill}`)} />
                     <span>
                       <span style={css(`font-size:13px;line-height:1.45;display:block;color:${p.text}`)}>{p.name}</span>
@@ -789,17 +794,17 @@ export default class AgentGuard extends React.Component {
                     </span>
                   </div>
                 ))}
-                <p style={css(`font-size:12.5px;line-height:1.7;color:var(--color-text-2);margin-top:13.8px`)}>
+                <p style={css(`font-size:12px;line-height:1.7;color:var(--color-text-2);margin-top:12px`)}>
                   Toggling a policy re-evaluates every queued mutation against the rehearsal already on file. No
                   re-run is needed; only the predicate changed.
                 </p>
 
-                <div style={css(`font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--color-text-2);margin:22px 0 9.2px;border-top:1px solid var(--color-border);padding-top:13.8px`)}>
+                <div style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2);margin:22px 0 8px;border-top:1px solid var(--color-border);padding-top:12px`)}>
                   Invariants, if all {v.actions.length} ran
                 </div>
                 {v.invariants.map((i, k) => (
                   <div key={k} style={css(`padding:5px 0`)}>
-                    <div style={css(`display:flex;gap:9.2px;align-items:baseline`)}>
+                    <div style={css(`display:flex;gap:8px;align-items:baseline`)}>
                       <span style={css(`font-size:13px;color:${i.color};flex:none`)}>{i.mark}</span>
                       <span style={css(`font-family:var(--font-mono);font-size:12px;line-height:1.5;color:${i.color}`)}>{i.expr}</span>
                     </div>
@@ -814,41 +819,41 @@ export default class AgentGuard extends React.Component {
         {/* ---- Live trace -------------------------------------------------- */}
         {v.onTrace && (
           <div style={css(`flex:1;min-height:0;display:flex;flex-direction:column`)}>
-            <div style={css(`display:flex;align-items:flex-end;justify-content:space-between;padding:18.4px 32px 13.8px`)}>
+            <div style={css(`display:flex;align-items:flex-end;justify-content:space-between;padding:16px 32px 12px`)}>
               <div>
                 <div style={S.kicker}>Live trace · {v.buildLabel} on {v.adapter.label}</div>
                 <h1 style={S.h1}>{v.traceHeadline}</h1>
               </div>
-              <button className="hv0" onClick={v.rollback} style={S.btn}>{v.rollbackLabel}</button>
+              <button className="hvp" onClick={v.rollback} style={S.btn}>{v.rollbackLabel}</button>
             </div>
-            <div style={css(`flex:1;min-height:0;overflow:auto;border-top:1px solid var(--color-border);padding:18.4px 32px`)}>
+            <div style={css(`flex:1;min-height:0;overflow:auto;border-top:1px solid var(--color-border);padding:16px 32px`)}>
               {v.spans.map((s, i) => (
                 <div key={i} style={css(`border-bottom:1px solid var(--color-border)`)}>
                   <div className="hv0" onClick={s.toggle}
-                    style={css(`cursor:pointer;display:grid;grid-template-columns:20px 230px 1fr 80px 110px;align-items:center;gap:13.8px;padding:9.2px 4px`)}>
+                    style={css(`cursor:pointer;display:grid;grid-template-columns:20px 230px 1fr 80px 110px;align-items:center;gap:12px;padding:8px 4px`)}>
                     <span style={css(`font-size:12px;color:var(--color-text-2)`)}>{s.caret}</span>
-                    <span style={css(`font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-size:16px`)}>{s.name}</span>
+                    <span style={css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;font-size:16px`)}>{s.name}</span>
                     <span style={css(`height:6px;background:var(--color-neutral-200);border-radius:3px;position:relative;display:block`)}>
                       <span style={css(`position:absolute;top:0;bottom:0;left:${s.left};width:${s.width};background:${s.bar};border-radius:3px`)} />
                     </span>
                     <span style={css(`font-size:13px;text-align:right;color:var(--color-text-2)`)}>{s.ms}</span>
-                    <span style={css(`font-size:11px;letter-spacing:.12em;text-transform:uppercase;text-align:right;color:${s.color}`)}>{s.status}</span>
+                    <span style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;text-align:right;color:${s.color}`)}>{s.status}</span>
                   </div>
                   {s.open && (
-                    <div style={css(`padding:0 4px 18.4px 38px;animation:ag-in .25s ease both`)}>
+                    <div style={css(`padding:0 4px 16px 38px;animation:ag-in .25s ease both`)}>
                       {s.native && (
-                        <div style={css(`display:flex;gap:13.8px;align-items:baseline;margin-bottom:9.2px`)}>
-                          <span style={css(`font-family:var(--font-mono);font-size:12.5px;color:var(--color-accent-700)`)}>{s.native}</span>
-                          <span style={css(`font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:${s.classColor}`)}>{s.cls}</span>
+                        <div style={css(`display:flex;gap:12px;align-items:baseline;margin-bottom:8px`)}>
+                          <span style={css(`font-family:var(--font-mono);font-size:12px;color:var(--color-accent-700)`)}>{s.native}</span>
+                          <span style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${s.classColor}`)}>{s.cls}</span>
                         </div>
                       )}
-                      <div style={css(`display:grid;grid-template-columns:1fr 1fr;gap:18.4px`)}>
+                      <div style={css(`display:grid;grid-template-columns:1fr 1fr;gap:16px`)}>
                         <div>
-                          <div style={css(`font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-text-2);margin-bottom:6px`)}>Arguments</div>
+                          <div style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2);margin-bottom:6px`)}>Arguments</div>
                           <pre style={S.pre}>{s.args}</pre>
                         </div>
                         <div>
-                          <div style={css(`font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-text-2);margin-bottom:6px`)}>Result</div>
+                          <div style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2);margin-bottom:6px`)}>Result</div>
                           <pre style={S.pre}>{s.result}</pre>
                         </div>
                       </div>
@@ -858,8 +863,8 @@ export default class AgentGuard extends React.Component {
               ))}
 
               {v.rolledBack && (
-                <div style={css(`margin-top:18.4px;background:var(--color-panel);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:18.4px;animation:ag-in .3s ease both`)}>
-                  <div style={css(`font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-size:20px;margin-bottom:4.6px`)}>
+                <div style={css(`margin-top:16px;background:var(--color-panel);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:16px;animation:ag-in .3s ease both`)}>
+                  <div style={css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;font-size:20px;margin-bottom:4px`)}>
                     Compensating plan — rebuilt from the audit log
                   </div>
                   <p style={css(`font-size:13px;line-height:1.7;color:var(--color-text-2);margin:0 0 11px`)}>
@@ -867,13 +872,13 @@ export default class AgentGuard extends React.Component {
                       ? `${v.sagaUnrecoverable} of these steps have no inverse on ${v.adapter.label}. Applying the plan is a partial rollback, not a restore — the rest needs manual repair.`
                       : `Every step has an inverse on ${v.adapter.label}. Applying this plan restores the checkpoint exactly.`}
                   </p>
-                  <div style={css(`display:grid;grid-template-columns:280px 120px 1fr;gap:13.8px;padding-bottom:6px;border-bottom:1px solid var(--color-border);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-text-2)`)}>
+                  <div style={css(`display:grid;grid-template-columns:280px 120px 1fr;gap:12px;padding-bottom:6px;border-bottom:1px solid var(--color-border);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2)`)}>
                     <span>Write</span><span>Reversibility</span><span>Compensating action</span>
                   </div>
                   {v.saga.map((g, i) => (
-                    <div key={i} style={css(`display:grid;grid-template-columns:280px 120px 1fr;gap:13.8px;padding:8px 0;border-bottom:1px solid var(--color-border);font-size:13px;align-items:baseline`)}>
-                      <span style={css(`color:${g.color};font-family:var(--font-mono);font-size:12.5px`)}>{g.step}</span>
-                      <span style={css(`font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:${g.color}`)}>{g.state}</span>
+                    <div key={i} style={css(`display:grid;grid-template-columns:280px 120px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--color-border);font-size:13px;align-items:baseline`)}>
+                      <span style={css(`color:${g.color};font-family:var(--font-mono);font-size:12px`)}>{g.step}</span>
+                      <span style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${g.color}`)}>{g.state}</span>
                       <span style={css(`color:var(--color-text-2);line-height:1.5`)}>{g.undo}</span>
                     </div>
                   ))}
@@ -886,17 +891,17 @@ export default class AgentGuard extends React.Component {
         {/* ---- Failure lab ------------------------------------------------- */}
         {v.onChaos && (
           <div style={css(`flex:1;min-height:0;display:grid;grid-template-columns:320px 1fr`)}>
-            <div style={css(`border-right:1px solid var(--color-border);padding:22px 18.4px;overflow:auto;display:flex;flex-direction:column;gap:18.4px`)}>
-              <div style={css(`font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--color-text-2)`)}>Inject failure</div>
+            <div style={css(`border-right:1px solid var(--color-border);padding:22px 16px;overflow:auto;display:flex;flex-direction:column;gap:16px`)}>
+              <div style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2)`)}>Inject failure</div>
 
-              <label style={css(`display:flex;flex-direction:column;gap:4.6px`)}>
+              <label style={css(`display:flex;flex-direction:column;gap:4px`)}>
                 <span style={S.lab}>Recorded run</span>
                 <select value={v.caseId} onChange={v.setCase} style={S.sel}>
                   {v.allCases.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </label>
 
-              <label style={css(`display:flex;flex-direction:column;gap:4.6px`)}>
+              <label style={css(`display:flex;flex-direction:column;gap:4px`)}>
                 <span style={S.lab}>Fault</span>
                 <select value={v.fault} onChange={v.setFault} style={S.sel}>
                   {v.faults.map((f) => (
@@ -905,24 +910,24 @@ export default class AgentGuard extends React.Component {
                 </select>
               </label>
 
-              <label style={css(`display:flex;flex-direction:column;gap:4.6px`)}>
+              <label style={css(`display:flex;flex-direction:column;gap:4px`)}>
                 <span style={S.lab}>At operation</span>
                 <select value={v.op} onChange={v.setOp} style={S.sel}>
                   {v.points.map((p) => <option key={p.op} value={p.op}>{p.label}</option>)}
                 </select>
               </label>
 
-              <div style={css(`display:flex;flex-direction:column;gap:9.2px;border-top:1px solid var(--color-border);padding-top:13.8px`)}>
+              <div style={css(`display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--color-border);padding-top:12px`)}>
                 {v.modifiers.map((m, i) => (
-                  <div key={i} onClick={m.toggle} style={css(`cursor:pointer;display:flex;gap:9.2px;align-items:flex-start`)}>
+                  <div key={i} onClick={m.toggle} style={css(`cursor:pointer;display:flex;gap:8px;align-items:flex-start`)}>
                     <span style={css(`flex:none;margin-top:3px;width:12px;height:12px;border-radius:2px;border:1px solid ${m.mark};background:${m.fill}`)} />
                     <span style={css(`font-size:13px;line-height:1.45;color:${m.text}`)}>{m.label}</span>
                   </div>
                 ))}
               </div>
 
-              <button className="hv0" onClick={v.inject} style={S.btn}>{v.injectLabel}</button>
-              <div style={css(`font-size:12.5px;line-height:1.7;color:var(--color-text-2);border-top:1px solid var(--color-border);padding-top:11px`)}>
+              <button className="hvp" onClick={v.inject} style={S.btn}>{v.injectLabel}</button>
+              <div style={css(`font-size:12px;line-height:1.7;color:var(--color-text-2);border-top:1px solid var(--color-border);padding-top:11px`)}>
                 Runs against a shadow account only. No production CRM is touched.
               </div>
             </div>
@@ -930,17 +935,17 @@ export default class AgentGuard extends React.Component {
             <div style={css(`padding:22px 32px;overflow:auto`)}>
               <div style={S.kicker}>Failure lab</div>
               <h1 style={S.h1}>Replay a recorded run with a fault injected.</h1>
-              <p style={css(`font-size:15px;line-height:1.7;max-width:66ch;margin:13.8px 0 0`)}>{v.experimentLine}</p>
+              <p style={css(`font-size:15px;line-height:1.7;max-width:66ch;margin:12px 0 0`)}>{v.experimentLine}</p>
 
               {v.chaosDone && (
-                <div style={css(`margin-top:22px;border:1px solid ${v.verdict.border};border-radius:var(--radius-md);padding:18.4px;animation:ag-in .3s ease both`)}>
-                  <div style={css(`font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-size:24px;color:${v.verdict.color}`)}>{v.verdict.headline}</div>
-                  <div style={css(`display:grid;grid-template-columns:repeat(4,1fr);gap:18.4px;margin-top:13.8px`)}>
+                <div style={css(`margin-top:22px;border:1px solid ${v.verdict.border};border-radius:var(--radius-md);padding:16px;animation:ag-in .3s ease both`)}>
+                  <div style={css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;font-size:24px;color:${v.verdict.color}`)}>{v.verdict.headline}</div>
+                  <div style={css(`display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:12px`)}>
                     {v.verdict.checks.map((c, i) => (
-                      <div key={i} style={css(`border-top:1px solid var(--color-border);padding-top:9.2px`)}>
-                        <div style={css(`font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-text-2)`)}>{c.label}</div>
-                        <div style={css(`font-size:15px;font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;color:${c.color};margin-top:3px`)}>{c.value}</div>
-                        <div style={css(`font-size:12.5px;line-height:1.5;color:var(--color-text-2);margin-top:2px`)}>{c.note}</div>
+                      <div key={i} style={css(`border-top:1px solid var(--color-border);padding-top:8px`)}>
+                        <div style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2)`)}>{c.label}</div>
+                        <div style={css(`font-size:15px;font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;color:${c.color};margin-top:3px`)}>{c.value}</div>
+                        <div style={css(`font-size:12px;line-height:1.5;color:var(--color-text-2);margin-top:2px`)}>{c.note}</div>
                       </div>
                     ))}
                   </div>
@@ -948,16 +953,16 @@ export default class AgentGuard extends React.Component {
               )}
 
               {v.chaosDone && v.proposal && (
-                <div style={css(`margin-top:18.4px;border:1px solid var(--color-border);border-left:3px solid var(--color-accent);border-radius:var(--radius-md);padding:13.8px 18.4px;animation:ag-in .3s ease both`)}>
-                  <div style={css(`display:flex;align-items:baseline;justify-content:space-between;gap:13.8px;flex-wrap:wrap`)}>
-                    <span style={css(`font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-size:19px`)}>
+                <div style={css(`margin-top:16px;border:1px solid var(--color-border);border-left:3px solid var(--color-accent);border-radius:var(--radius-md);padding:12px 16px;animation:ag-in .3s ease both`)}>
+                  <div style={css(`display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap`)}>
+                    <span style={css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;font-size:19px`)}>
                       {v.proposal.novel ? 'This failure is not in the suite' : `Already covered by ${v.proposal.covered}`}
                     </span>
-                    <button className="hv1" onClick={v.toggleSource} style={css(`font-family:var(--font-ui);font-size:13px;padding:5px 13.8px;border:1px solid var(--color-neutral-400);color:var(--color-neutral-800);background:transparent;border-radius:var(--radius-md);cursor:pointer`)}>
+                    <button className="hv1" onClick={v.toggleSource} style={css(`font-family:var(--font-ui);font-size:13px;font-weight:500;padding:5px 12px;border:1px solid var(--color-border);color:var(--color-text);background:var(--color-panel);border-radius:var(--radius-md);cursor:pointer`)}>
                       {v.showSource ? 'Hide case' : 'Show generated case'}
                     </button>
                   </div>
-                  <p style={css(`font-size:13px;line-height:1.7;color:var(--color-neutral-800);margin:4.6px 0 0`)}>
+                  <p style={css(`font-size:13px;line-height:1.7;color:var(--color-neutral-800);margin:4px 0 0`)}>
                     {v.proposal.why}. Minimised to {v.proposal.reduction.kept} of {v.proposal.reduction.from} records,
                     the smallest account that still reproduces it.
                   </p>
@@ -967,7 +972,7 @@ export default class AgentGuard extends React.Component {
 
               <div style={css(`margin-top:22px;border-top:1px solid var(--color-border)`)}>
                 {v.chaosLog.map((l, i) => (
-                  <div key={i} style={css(`display:grid;grid-template-columns:70px 1fr;gap:18.4px;padding:7px 0;border-bottom:1px solid var(--color-border);animation:ag-in .3s ease both`)}>
+                  <div key={i} style={css(`display:grid;grid-template-columns:70px 1fr;gap:16px;padding:7px 0;border-bottom:1px solid var(--color-border);animation:ag-in .3s ease both`)}>
                     <span style={css(`font-size:13px;color:var(--color-text-2)`)}>{l.t}</span>
                     <span style={css(`font-size:14px;line-height:1.5;color:${l.color}`)}>{l.text}</span>
                   </div>
@@ -975,7 +980,7 @@ export default class AgentGuard extends React.Component {
               </div>
 
               {v.chaosIdle && (
-                <div style={css(`margin-top:18.4px;border:1px dashed var(--color-neutral-400);border-radius:var(--radius-md);padding:36.8px;text-align:center;font-size:14px;color:var(--color-text-2)`)}>
+                <div style={css(`margin-top:16px;border:1px dashed var(--color-neutral-400);border-radius:var(--radius-md);padding:32px;text-align:center;font-size:14px;color:var(--color-text-2)`)}>
                   Pick a fault and inject it to see the recovery path.
                 </div>
               )}
@@ -986,29 +991,29 @@ export default class AgentGuard extends React.Component {
         {/* ---- Evals ------------------------------------------------------- */}
         {v.onEvals && (
           <div style={css(`flex:1;min-height:0;overflow:auto;padding:22px 32px`)}>
-            <div style={css(`display:flex;align-items:flex-end;justify-content:space-between;gap:18.4px`)}>
+            <div style={css(`display:flex;align-items:flex-end;justify-content:space-between;gap:16px`)}>
               <div>
                 <div style={S.kicker}>Replay &amp; evals · {v.adapter.label}</div>
                 <h1 style={S.h1}>{v.cases.length} recorded cases, replayed against v1.9.</h1>
               </div>
-              <span style={css(`font-size:13px;color:${v.gate.color};background:var(--color-panel);border:1px solid var(--color-border);padding:6px 13.8px;border-radius:var(--radius-md);white-space:nowrap`)}>
+              <span style={css(`font-size:13px;color:${v.gate.color};background:var(--color-panel);border:1px solid var(--color-border);padding:6px 12px;border-radius:var(--radius-md);white-space:nowrap`)}>
                 {v.gate.badge}
               </span>
             </div>
 
             <div style={css(`display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:22px;border-top:1px solid var(--color-text)`)}>
               {v.metrics.map((m, i) => (
-                <div key={i} style={css(`padding:13.8px 13.8px 13.8px 0;border-right:1px solid var(--color-border)`)}>
-                  <div style={css(`font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-text-2)`)}>{m.label}</div>
+                <div key={i} style={css(`padding:12px 12px 12px 0;border-right:1px solid var(--color-border)`)}>
+                  <div style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2)`)}>{m.label}</div>
                   <div style={css(`display:flex;align-items:baseline;gap:6px;margin-top:6px`)}>
                     <span style={css(`font-size:14px;color:var(--color-neutral-500);text-decoration:line-through`)}>{m.old}</span>
-                    <span style={css(`font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-size:21px;color:${m.color}`)}>{m.cand}</span>
+                    <span style={css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;font-size:21px;color:${m.color}`)}>{m.cand}</span>
                     <span style={css(`font-size:13px;color:var(--color-accent-800)`)}>{m.mark}</span>
                   </div>
                 </div>
               ))}
             </div>
-            <p style={css(`font-size:13px;line-height:1.6;color:var(--color-text-2);margin:9.2px 0 0`)}>
+            <p style={css(`font-size:13px;line-height:1.6;color:var(--color-text-2);margin:8px 0 0`)}>
               v1.8 struck through, v1.9 in front. The candidate completes more runs because it no longer abandons them
               at the first hard failure. That same change is why it gets more of them wrong.
             </p>
@@ -1017,9 +1022,9 @@ export default class AgentGuard extends React.Component {
               <thead><tr>
                 <th style={S.th}>Recorded case</th>
                 <th style={S.th}>Injected fault</th>
-                <th style={css(`text-align:right;padding:9.2px 6px;border-bottom:1px solid var(--color-text);font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-weight:600;font-size:15px`)}>v1.8</th>
-                <th style={css(`text-align:right;padding:9.2px 6px;border-bottom:1px solid var(--color-text);font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-weight:600;font-size:15px`)}>v1.9</th>
-                <th style={css(`text-align:right;padding:9.2px 6px;border-bottom:1px solid var(--color-text);font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-weight:600;font-size:15px`)}>Δ latency</th>
+                <th style={css(`text-align:right;padding:8px 6px;border-bottom:1px solid var(--color-text);font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;font-size:15px`)}>v1.8</th>
+                <th style={css(`text-align:right;padding:8px 6px;border-bottom:1px solid var(--color-text);font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;font-size:15px`)}>v1.9</th>
+                <th style={css(`text-align:right;padding:8px 6px;border-bottom:1px solid var(--color-text);font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;font-size:15px`)}>Δ latency</th>
                 <th style={S.th}></th>
               </tr></thead>
               <tbody>
@@ -1037,10 +1042,10 @@ export default class AgentGuard extends React.Component {
             </table>
 
             {v.portability.length > 0 && (
-              <div style={css(`margin-top:18.4px;border-left:3px solid var(--color-accent);padding:11px 18.4px;background:var(--color-accent-100);border-radius:var(--radius-md)`)}>
-                <div style={css(`font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-size:18px`)}>A CRM failure, not a build regression</div>
+              <div style={css(`margin-top:16px;border-left:3px solid var(--color-accent);padding:11px 16px;background:var(--color-accent-100);border-radius:var(--radius-md)`)}>
+                <div style={css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;font-size:18px`)}>A CRM failure, not a build regression</div>
                 {v.portability.map((p, i) => (
-                  <p key={i} style={css(`font-size:13px;line-height:1.7;color:var(--color-neutral-800);margin:4.6px 0 0`)}>
+                  <p key={i} style={css(`font-size:13px;line-height:1.7;color:var(--color-neutral-800);margin:4px 0 0`)}>
                     “{p.name}” fails on {v.adapter.label} for both builds, at {p.field}. Promoting or blocking v1.9
                     changes nothing here; the pipeline mapping does.
                   </p>
@@ -1049,20 +1054,20 @@ export default class AgentGuard extends React.Component {
             )}
 
             {v.compareOpen && (
-              <div style={css(`margin-top:27.6px;border-top:1px solid var(--color-text);padding-top:18.4px;animation:ag-in .3s ease both`)}>
-                <div style={css(`display:flex;align-items:baseline;justify-content:space-between;gap:18.4px`)}>
-                  <h2 style={css(`font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-weight:400;font-size:26px;margin:0`)}>{v.compare.name}</h2>
+              <div style={css(`margin-top:24px;border-top:1px solid var(--color-text);padding-top:16px;animation:ag-in .3s ease both`)}>
+                <div style={css(`display:flex;align-items:baseline;justify-content:space-between;gap:16px`)}>
+                  <h2 style={css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.015em;font-size:26px;margin:0`)}>{v.compare.name}</h2>
                   <span style={css(`font-size:13px;color:var(--color-text-2)`)}>{v.compare.summary}</span>
                 </div>
-                <p style={css(`font-size:14px;line-height:1.7;color:var(--color-text-2);margin:4.6px 0 0;max-width:80ch`)}>{v.compare.note}</p>
+                <p style={css(`font-size:14px;line-height:1.7;color:var(--color-text-2);margin:4px 0 0;max-width:80ch`)}>{v.compare.note}</p>
 
-                <div style={css(`display:grid;grid-template-columns:1fr 1fr;gap:27.6px;margin-top:13.8px`)}>
+                <div style={css(`display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:12px`)}>
                   {[['v1.8 — current', v.compare.left, 'var(--color-text-2)'], ['v1.9 — candidate', v.compare.right, 'var(--color-accent-700)']].map(([title, rows, tint], k) => (
                     <div key={k}>
-                      <div style={css(`font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:${tint};border-bottom:1px solid var(--color-border);padding-bottom:6px`)}>{title}</div>
+                      <div style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${tint};border-bottom:1px solid var(--color-border);padding-bottom:6px`)}>{title}</div>
                       {rows.map((r, i) => (
-                        <div key={i} style={css(`display:flex;justify-content:space-between;gap:9.2px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--color-border);color:${r.color}`)}>
-                          <span style={css(`font-family:var(--font-mono);font-size:12.5px`)}>{r.step}</span>
+                        <div key={i} style={css(`display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--color-border);color:${r.color}`)}>
+                          <span style={css(`font-family:var(--font-mono);font-size:12px`)}>{r.step}</span>
                           <span style={css(`color:var(--color-text-2)`)}>{r.meta}</span>
                         </div>
                       ))}
@@ -1071,11 +1076,11 @@ export default class AgentGuard extends React.Component {
                 </div>
 
                 {v.compare.misses.length > 0 && (
-                  <div style={css(`margin-top:13.8px`)}>
+                  <div style={css(`margin-top:12px`)}>
                     <div style={S.eyebrow}>Where the account ended up wrong</div>
                     {v.compare.misses.map((m, i) => (
-                      <div key={i} style={css(`display:grid;grid-template-columns:240px 1fr 1fr;gap:13.8px;padding:7px 0;border-bottom:1px solid var(--color-border);font-size:13px`)}>
-                        <span style={css(`font-family:var(--font-mono);font-size:12.5px;color:var(--color-text-2)`)}>{m.field}</span>
+                      <div key={i} style={css(`display:grid;grid-template-columns:240px 1fr 1fr;gap:12px;padding:7px 0;border-bottom:1px solid var(--color-border);font-size:13px`)}>
+                        <span style={css(`font-family:var(--font-mono);font-size:12px;color:var(--color-text-2)`)}>{m.field}</span>
                         <span style={css(`color:var(--color-accent-800)`)}>got {m.got}</span>
                         <span style={css(`color:var(--color-text-2)`)}>want {m.want}</span>
                       </div>
@@ -1083,21 +1088,21 @@ export default class AgentGuard extends React.Component {
                   </div>
                 )}
 
-                <p style={css(`font-size:14px;line-height:1.7;color:var(--color-accent-800);margin:13.8px 0 0;max-width:82ch`)}>{v.compare.verdict}</p>
+                <p style={css(`font-size:14px;line-height:1.7;color:var(--color-accent-800);margin:12px 0 0;max-width:82ch`)}>{v.compare.verdict}</p>
               </div>
             )}
 
-            <div style={css(`margin-top:27.6px`)}>
+            <div style={css(`margin-top:24px`)}>
               <div style={S.eyebrow}>Generated regression tests</div>
-              <p style={css(`font-size:14px;line-height:1.7;color:var(--color-text-2);margin:9.2px 0 0;max-width:80ch`)}>
+              <p style={css(`font-size:14px;line-height:1.7;color:var(--color-text-2);margin:8px 0 0;max-width:80ch`)}>
                 {v.proposals.length} failures analysed and minimised into candidate cases. {v.novel === 0
                   ? 'None need a new case; the suite already pins every one.'
                   : `${v.novel} are not pinned by any existing case.`} Break something new in the failure lab and a
                 proposal for it appears there.
               </p>
               {v.proposals.slice(0, 4).map((p, i) => (
-                <div key={i} style={css(`display:grid;grid-template-columns:100px 1fr 150px;gap:13.8px;padding:9.2px 0;border-bottom:1px solid var(--color-border);font-size:13px;align-items:baseline`)}>
-                  <span style={css(`font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:${p.novel ? 'var(--color-accent-800)' : 'var(--color-text-2)'}`)}>
+                <div key={i} style={css(`display:grid;grid-template-columns:100px 1fr 150px;gap:12px;padding:8px 0;border-bottom:1px solid var(--color-border);font-size:13px;align-items:baseline`)}>
+                  <span style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${p.novel ? 'var(--color-accent-800)' : 'var(--color-text-2)'}`)}>
                     {p.novel ? 'new case' : `covered · ${p.covered}`}
                   </span>
                   <span style={css(`color:var(--color-neutral-800);line-height:1.5`)}>{p.why}</span>
@@ -1106,15 +1111,15 @@ export default class AgentGuard extends React.Component {
               ))}
             </div>
 
-            <div style={css(`margin-top:27.6px;background:var(--color-panel);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:18.4px`)}>
-              <div style={css(`display:flex;align-items:baseline;justify-content:space-between;gap:18.4px;flex-wrap:wrap`)}>
-                <span style={css(`font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-size:22px`)}>Deployment gate — agent {v.score.candidateLabel}</span>
-                <span style={css(`font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:${v.gate.color}`)}>operator decision: {v.gate.status}</span>
+            <div style={css(`margin-top:24px;background:var(--color-panel);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:16px`)}>
+              <div style={css(`display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap`)}>
+                <span style={css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.012em;font-size:22px`)}>Deployment gate — agent {v.score.candidateLabel}</span>
+                <span style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${v.gate.color}`)}>operator decision: {v.gate.status}</span>
               </div>
 
               {/* The gate itself is not a judgement call — it is the conjunction
                   of the thresholds below, recomputed from the suite. */}
-              <div style={css(`display:grid;grid-template-columns:1fr 220px;gap:27.6px;margin-top:18.4px;align-items:start`)}>
+              <div style={css(`display:grid;grid-template-columns:1fr 220px;gap:24px;margin-top:16px;align-items:start`)}>
                 <div>
                   {v.score.candidate.rows.map((r, i) => (
                     <div key={i} style={css(`display:grid;grid-template-columns:1fr 90px 110px 20px;gap:11px;align-items:baseline;padding:7px 0;font-size:14px`)}>
@@ -1128,34 +1133,34 @@ export default class AgentGuard extends React.Component {
                   ))}
                 </div>
 
-                <div style={css(`background:var(--color-panel-2);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:18.4px;text-align:center`)}>
-                  <div style={css(`font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-2)`)}>AgentGuard score</div>
+                <div style={css(`background:var(--color-panel-2);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:16px;text-align:center`)}>
+                  <div style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2)`)}>AgentGuard score</div>
                   <div style={css(`font-size:44px;line-height:1.1;margin-top:6px;color:${v.score.candidate.verdict === 'pass' ? 'var(--color-pass)' : 'var(--color-fail)'}`)}>
                     {v.score.candidate.score}
                   </div>
                   <div style={css(`font-size:13px;color:var(--color-text-2)`)}>out of 100</div>
-                  <div style={css(`margin-top:11px;padding-top:11px;border-top:1px solid var(--color-border);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:${v.score.candidate.verdict === 'pass' ? 'var(--color-pass)' : 'var(--color-fail)'}`)}>
+                  <div style={css(`margin-top:11px;padding-top:11px;border-top:1px solid var(--color-border);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:${v.score.candidate.verdict === 'pass' ? 'var(--color-pass)' : 'var(--color-fail)'}`)}>
                     {v.score.candidate.verdict === 'pass' ? 'ready for production' : 'blocked'}
                   </div>
-                  <div style={css(`margin-top:9.2px;font-size:12.5px;color:var(--color-text-2)`)}>
+                  <div style={css(`margin-top:8px;font-size:12px;color:var(--color-text-2)`)}>
                     {v.score.baselineLabel} scores {v.score.baseline.score}
                   </div>
                 </div>
               </div>
 
-              <p style={css(`font-size:13.5px;line-height:1.7;margin:13.8px 0 0;max-width:82ch;color:var(--color-text-2)`)}>
+              <p style={css(`font-size:13.5px;line-height:1.7;margin:12px 0 0;max-width:82ch;color:var(--color-text-2)`)}>
                 {v.score.candidate.failed.length === 0
                   ? `Every threshold cleared. ${v.score.candidateLabel} is eligible for promotion.`
                   : `${v.score.candidate.failed.length} of ${v.score.candidate.rows.length} thresholds missed` +
                     (v.score.candidate.criticalFailures ? `, ${v.score.candidate.criticalFailures} of them critical` : '') +
                     `. ${v.score.baselineLabel} does not clear this bar either — it scores ${v.score.baseline.score} — so the gate separates the two builds by margin rather than by pass and fail.`}
               </p>
-              <p style={css(`font-size:13.5px;line-height:1.75;max-width:82ch;margin:9.2px 0 0;color:var(--color-neutral-800)`)}>{v.gate.note}</p>
-              <div style={css(`font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-2);margin-top:18.4px`)}>Operator override</div>
-              <div style={css(`display:flex;gap:9.2px;margin-top:9.2px;flex-wrap:wrap`)}>
+              <p style={css(`font-size:13.5px;line-height:1.75;max-width:82ch;margin:8px 0 0;color:var(--color-neutral-800)`)}>{v.gate.note}</p>
+              <div style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2);margin-top:16px`)}>Operator override</div>
+              <div style={css(`display:flex;gap:8px;margin-top:8px;flex-wrap:wrap`)}>
                 {v.gate.actions.map((g, i) => (
                   <button key={i} className="hv0" onClick={g.go}
-                    style={css(`font-family:var(--font-ui);font-size:14px;padding:9.2px 22px;border:1px solid ${g.border};color:${g.color};background:transparent;border-radius:var(--radius-md);cursor:pointer`)}>
+                    style={css(`font-family:var(--font-ui);font-size:14px;padding:8px 22px;border:1px solid ${g.border};color:${g.color};background:transparent;border-radius:var(--radius-md);cursor:pointer`)}>
                     {g.label}
                   </button>
                 ))}
