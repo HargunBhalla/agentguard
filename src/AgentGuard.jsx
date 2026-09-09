@@ -69,6 +69,42 @@ const FEATURE_DEFS = [
   { n: '6', name: 'Trace & deployment gate', tab: 'evals' },
 ];
 
+/**
+ * The five screens, in the order an operator works them. This is the single
+ * source for the tab bar, each screen's header and the step footer, so the
+ * numbering, the plain-language titles and the "what next" prompt can never
+ * disagree with each other.
+ *
+ * `label` is the tab; `title` is the screen's own heading; `blurb` is the one
+ * sentence that says what the screen is for, in plain words.
+ */
+const STEPS = [
+  {
+    id: 'pipeline', label: 'Overview', title: 'Overview',
+    blurb: 'What this evaluation run found. Start here — every row below opens the screen where that check was made.',
+    nextCta: 'Review the mutations',
+  },
+  {
+    id: 'preflight', label: 'Review', title: 'Review the proposed changes',
+    blurb: 'The agent wants to make these CRM changes. Pick one to see exactly what it would write and which policies object, then approve or block it.',
+    nextCta: 'See how they executed',
+  },
+  {
+    id: 'trace', label: 'Trace', title: 'Trace',
+    blurb: 'A single agent run, call by call. Open a span to see the request that went to the CRM and what came back.',
+    nextCta: 'Try breaking it',
+  },
+  {
+    id: 'chaos', label: 'Failure testing', title: 'Break it on purpose',
+    blurb: 'Replay a recorded run with a real failure injected, and see whether the agent recovers or leaves the account wrong.',
+    nextCta: 'Compare the builds',
+  },
+  {
+    id: 'evals', label: 'Compare & ship', title: 'Compare builds and decide',
+    blurb: 'Both agent builds replayed against every recorded case, scored against the production thresholds — and the ship decision that follows.',
+  },
+];
+
 export default class AgentGuard extends React.Component {
   state = {
     tab: tabFromHash(), crm: 'hubspot', build: 'v1.9',
@@ -163,16 +199,23 @@ export default class AgentGuard extends React.Component {
     const suite = this.suite;
     const strict = this.props.strictMode ?? false;
 
-    const tabs = [
-      // Hash ids are stable so existing links keep working; only the labels
-      // follow the platform's own vocabulary.
-      ['pipeline', 'Overview'], ['preflight', 'Simulation & policy'], ['trace', 'Trace'],
-      ['chaos', 'Failure & recovery'], ['evals', 'Replay & gate'],
-    ].map(([id, label]) => ({
-      label, go: () => this.goTab(id), active: st.tab === id,
-      bg: st.tab === id ? 'var(--color-panel)' : 'transparent',
-      color: st.tab === id ? 'var(--color-text)' : 'var(--color-text-2)',
+    const tabs = STEPS.map((step, i) => ({
+      label: step.label, n: i + 1, go: () => this.goTab(step.id), active: st.tab === step.id,
+      bg: st.tab === step.id ? 'var(--color-panel)' : 'transparent',
+      color: st.tab === step.id ? 'var(--color-text)' : 'var(--color-text-2)',
     }));
+
+    // Where the reader is in the flow, and what the obvious next move is. A
+    // console with five dense screens needs to answer "what now" without the
+    // reader having to infer it from the tab bar.
+    const stepIndex = Math.max(0, STEPS.findIndex((x) => x.id === st.tab));
+    const step = STEPS[stepIndex];
+    const nav = {
+      n: stepIndex + 1, total: STEPS.length,
+      title: step.title, blurb: step.blurb,
+      prev: STEPS[stepIndex - 1] && { label: STEPS[stepIndex - 1].label, go: () => this.goTab(STEPS[stepIndex - 1].id) },
+      next: STEPS[stepIndex + 1] && { label: STEPS[stepIndex + 1].label, go: () => this.goTab(STEPS[stepIndex + 1].id), cta: STEPS[stepIndex].nextCta },
+    };
 
     // ---- pre-flight --------------------------------------------------------
     const actions = this.rehearsed.map((a) => {
@@ -347,7 +390,7 @@ export default class AgentGuard extends React.Component {
     };
 
     return {
-      run,
+      run, nav,
       tabs, adapter,
       crm: st.crm, setCrm: this.setCrm, crms: ADAPTERS,
       build: st.build, buildLabel: this.buildObj.label,
@@ -483,7 +526,6 @@ export default class AgentGuard extends React.Component {
     const S = {
       page: css(`height:100vh;display:flex;flex-direction:column;background:var(--color-bg);font-family:var(--font-ui)`),
       head: css(`display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 20px;background:var(--color-panel);border-bottom:1px solid var(--color-border);flex:none`),
-      kicker: css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2)`),
       eyebrow: css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2);padding-bottom:6px`),
       h1: css(`font-family:var(--font-ui);font-weight:600;letter-spacing:-.015em;font-size:24px;margin:4px 0 0;line-height:1.2`),
       body: css(`font-size:15px;line-height:1.65;max-width:78ch;margin:11px 0 0;color:var(--color-text-2)`),
@@ -500,6 +542,10 @@ export default class AgentGuard extends React.Component {
       panelHead: css(`display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--color-panel-2);border-bottom:1px solid var(--color-border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2)`),
       th: css(`text-align:left;padding:9px 14px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:var(--color-text-2);background:var(--color-panel-2)`),
       td: css(`padding:11px 12px;border-top:1px solid var(--color-border)`),
+      // Every screen opens the same way: which step it is, what it is called,
+      // and one sentence saying what you do on it.
+      stepTag: css(`display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--color-accent-700);background:var(--color-accent-100);border-radius:var(--radius-sm);padding:2px 8px`),
+      blurb: css(`font-size:13px;line-height:1.6;color:var(--color-text-2);margin-top:6px;max-width:80ch`),
     };
 
     return (
@@ -526,16 +572,21 @@ export default class AgentGuard extends React.Component {
           <nav style={css(`display:flex;gap:2px;padding:2px;background:var(--color-neutral-200);border-radius:var(--radius-md)`)}>
             {v.tabs.map((t, i) => (
               <button key={i} onClick={t.go} aria-current={t.active ? 'page' : undefined}
-                style={css(`font-family:var(--font-ui);font-size:13px;font-weight:500;padding:5px 12px;border-radius:var(--radius-sm);cursor:pointer;border:0;white-space:nowrap;background:${t.bg};color:${t.color};box-shadow:${t.active ? 'var(--shadow-sm)' : 'none'}`)}>
+                style={css(`display:flex;align-items:center;gap:6px;font-family:var(--font-ui);font-size:13px;font-weight:500;padding:5px 12px;border-radius:var(--radius-sm);cursor:pointer;border:0;white-space:nowrap;background:${t.bg};color:${t.color};box-shadow:${t.active ? 'var(--shadow-sm)' : 'none'}`)}>
+                <span style={css(`font-size:11px;font-variant-numeric:tabular-nums;color:${t.active ? 'var(--color-accent-700)' : 'var(--color-neutral-500)'}`)}>{t.n}</span>
                 {t.label}
               </button>
             ))}
           </nav>
 
           <div style={css(`display:flex;align-items:center;gap:8px;font-size:13px;color:var(--color-text-2)`)}>
+            {/* These two re-scope every screen in the console, so they are
+                labelled rather than left as two bare dropdowns. */}
+            <span style={css(`font-size:12px;color:var(--color-text-2)`)}>CRM</span>
             <select value={v.crm} onChange={v.setCrm} aria-label="CRM" style={S.sel}>
               {v.crms.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
             </select>
+            <span style={css(`font-size:12px;color:var(--color-text-2);margin-left:4px`)}>Build</span>
             <select value={v.build} onChange={v.setBuild} aria-label="Agent build" style={S.sel}>
               <option value="v1.8">v1.8 — current</option>
               <option value="v1.9">v1.9 — candidate</option>
@@ -553,10 +604,12 @@ export default class AgentGuard extends React.Component {
               {/* The run, not the architecture: what this evaluation found. */}
               <div style={css(`display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap`)}>
                 <div>
-                  <h1 style={css(`font-family:var(--font-ui);font-weight:600;font-size:22px;letter-spacing:-.02em;margin:0;line-height:1.2`)}>
+                  <span style={S.stepTag}>Step {v.nav.n} of {v.nav.total}</span>
+                  <h1 style={css(`font-family:var(--font-ui);font-weight:600;font-size:22px;letter-spacing:-.02em;margin:8px 0 0;line-height:1.2`)}>
                     Evaluation run {v.run.id}
                   </h1>
                   <div style={css(`font-size:13px;color:var(--color-text-2);margin-top:5px`)}>{v.run.subtitle}</div>
+                  <div style={S.blurb}>{v.nav.blurb}</div>
                 </div>
                 <div style={css(`display:flex;align-items:center;gap:8px;font-size:13px;color:${v.run.statusTone}`)}>
                   <span style={css(`width:7px;height:7px;border-radius:50%;background:${v.run.statusTone}`)} />
@@ -570,7 +623,11 @@ export default class AgentGuard extends React.Component {
 
               {/* Conventional LLM evals stop at the response. The chain below is
                   what this run is actually scored on. */}
-              <div style={css(`display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:16px;font-size:12px;color:var(--color-text-2)`)}>
+              <div style={css(`margin-top:16px;font-size:12px;color:var(--color-text-2)`)}>
+                Every run below executed against a shadow account. Nothing here touched a production CRM.
+              </div>
+
+              <div style={css(`display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--color-text-2)`)}>
                 {['Instruction', 'Agent decision', 'CRM tool call', 'Proposed state change', 'Policy validation', 'Failure handling', 'Final CRM state', 'Business correctness'].map((step, i) => (
                   <React.Fragment key={i}>
                     {i > 0 && <span style={css(`color:var(--color-neutral-400)`)}>→</span>}
@@ -621,14 +678,14 @@ export default class AgentGuard extends React.Component {
                   <div style={S.panelHead}>
                     <span>Evaluation pipeline</span>
                     <span style={css(`font-weight:400;letter-spacing:0;text-transform:none;color:var(--color-text-2)`)}>
-                      nothing here touches a production account
+                      click a row to open it
                     </span>
                   </div>
                   <div style={css(`padding:6px 0 6px`)}>
                     {v.stages.map((s, i) => (
                       <div key={i} className="hv0" onClick={s.go} role="button" tabIndex={0}
                         onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), s.go())}
-                        style={css(`cursor:pointer;display:grid;grid-template-columns:34px 1fr 18px;gap:12px;align-items:baseline;padding:11px 22px`)}>
+                        style={css(`cursor:pointer;display:grid;grid-template-columns:34px 1fr 40px;gap:12px;align-items:baseline;padding:11px 22px`)}>
                         <span style={css(`font-family:var(--font-mono);font-size:12px;color:var(--color-text-2)`)}>
                           {String(i + 1).padStart(2, '0')}
                         </span>
@@ -637,7 +694,9 @@ export default class AgentGuard extends React.Component {
                           <span style={css(`font-size:15px;display:block;margin-top:3px`)}>{s.headline}</span>
                           <span style={css(`font-size:12px;color:var(--color-text-2);display:block`)}>{s.detail}</span>
                         </span>
-                        <span style={css(`font-size:13px;color:${s.tone};text-align:right`)}>{s.glyph}</span>
+                        <span style={css(`display:flex;align-items:baseline;justify-content:flex-end;gap:8px;font-size:13px;color:${s.tone}`)}>
+                          {s.glyph}<span style={css(`color:var(--color-neutral-400)`)}>→</span>
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -682,9 +741,12 @@ export default class AgentGuard extends React.Component {
           <div style={css(`flex:1;min-height:0;display:flex;flex-direction:column`)}>
             <div style={css(`display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:16px 32px 12px`)}>
               <div>
-                <div style={S.kicker}>Pre-flight review · {v.adapter.label}</div>
-                <h1 style={S.h1}>{v.actions.length} mutations awaiting review</h1>
-                <div style={css(`font-size:13px;color:var(--color-text-2);margin-top:5px;max-width:78ch`)}>{GOAL}</div>
+                <span style={S.stepTag}>Step {v.nav.n} of {v.nav.total}</span>
+                <h1 style={S.h1}>{v.actions.length} changes awaiting your review</h1>
+                <div style={S.blurb}>{v.nav.blurb}</div>
+                <div style={css(`font-size:13px;color:var(--color-text-2);margin-top:6px;max-width:78ch`)}>
+                  <span style={css(`color:var(--color-neutral-500)`)}>The agent was asked to:</span> {GOAL}
+                </div>
               </div>
               <div style={css(`display:flex;gap:12px;align-items:center`)}>
                 {v.simIdle && <button className="hvp" onClick={v.runSim} style={S.btn}>Run shadow execution</button>}
@@ -821,8 +883,12 @@ export default class AgentGuard extends React.Component {
           <div style={css(`flex:1;min-height:0;display:flex;flex-direction:column`)}>
             <div style={css(`display:flex;align-items:flex-end;justify-content:space-between;padding:16px 32px 12px`)}>
               <div>
-                <div style={S.kicker}>Live trace · {v.buildLabel} on {v.adapter.label}</div>
-                <h1 style={S.h1}>{v.traceHeadline}</h1>
+                <span style={S.stepTag}>Step {v.nav.n} of {v.nav.total}</span>
+                <h1 style={S.h1}>{v.nav.title}</h1>
+                <div style={S.blurb}>{v.nav.blurb}</div>
+                <div style={css(`font-size:12px;color:var(--color-text-2);margin-top:6px`)}>
+                  {v.buildLabel} on {v.adapter.label} · {v.traceHeadline}
+                </div>
               </div>
               <button className="hvp" onClick={v.rollback} style={S.btn}>{v.rollbackLabel}</button>
             </div>
@@ -890,7 +956,13 @@ export default class AgentGuard extends React.Component {
 
         {/* ---- Failure lab ------------------------------------------------- */}
         {v.onChaos && (
-          <div style={css(`flex:1;min-height:0;display:grid;grid-template-columns:320px 1fr`)}>
+          <div style={css(`flex:1;min-height:0;display:flex;flex-direction:column`)}>
+            <div style={css(`padding:16px 32px 12px`)}>
+              <span style={S.stepTag}>Step {v.nav.n} of {v.nav.total}</span>
+              <h1 style={S.h1}>{v.nav.title}</h1>
+              <div style={S.blurb}>{v.nav.blurb}</div>
+            </div>
+            <div style={css(`flex:1;min-height:0;display:grid;grid-template-columns:320px 1fr;border-top:1px solid var(--color-border)`)}>
             <div style={css(`border-right:1px solid var(--color-border);padding:22px 16px;overflow:auto;display:flex;flex-direction:column;gap:16px`)}>
               <div style={css(`font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-2)`)}>Inject failure</div>
 
@@ -933,9 +1005,8 @@ export default class AgentGuard extends React.Component {
             </div>
 
             <div style={css(`padding:22px 32px;overflow:auto`)}>
-              <div style={S.kicker}>Failure lab</div>
-              <h1 style={S.h1}>Replay a recorded run with a fault injected.</h1>
-              <p style={css(`font-size:15px;line-height:1.7;max-width:66ch;margin:12px 0 0`)}>{v.experimentLine}</p>
+              <div style={S.eyebrow}>The experiment</div>
+              <p style={css(`font-size:15px;line-height:1.7;max-width:70ch;margin:0`)}>{v.experimentLine}</p>
 
               {v.chaosDone && (
                 <div style={css(`margin-top:22px;border:1px solid ${v.verdict.border};border-radius:var(--radius-md);padding:16px;animation:ag-in .3s ease both`)}>
@@ -985,6 +1056,7 @@ export default class AgentGuard extends React.Component {
                 </div>
               )}
             </div>
+            </div>
           </div>
         )}
 
@@ -993,8 +1065,12 @@ export default class AgentGuard extends React.Component {
           <div style={css(`flex:1;min-height:0;overflow:auto;padding:22px 32px`)}>
             <div style={css(`display:flex;align-items:flex-end;justify-content:space-between;gap:16px`)}>
               <div>
-                <div style={S.kicker}>Replay &amp; evals · {v.adapter.label}</div>
-                <h1 style={S.h1}>{v.cases.length} recorded cases, replayed against v1.9.</h1>
+                <span style={S.stepTag}>Step {v.nav.n} of {v.nav.total}</span>
+                <h1 style={S.h1}>{v.nav.title}</h1>
+                <div style={S.blurb}>{v.nav.blurb}</div>
+                <div style={css(`font-size:12px;color:var(--color-text-2);margin-top:6px`)}>
+                  {v.cases.length} recorded cases replayed on {v.adapter.label}
+                </div>
               </div>
               <span style={css(`font-size:13px;color:${v.gate.color};background:var(--color-panel);border:1px solid var(--color-border);padding:6px 12px;border-radius:var(--radius-md);white-space:nowrap`)}>
                 {v.gate.badge}
@@ -1176,6 +1252,40 @@ export default class AgentGuard extends React.Component {
             </p>
           </div>
         )}
+
+        {/* One fixed place that answers "where am I and what now", so the
+            reader never has to work the flow out from the tab bar. */}
+        <footer style={css(`flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 20px;background:var(--color-panel);border-top:1px solid var(--color-border)`)}>
+          <div style={css(`flex:none;width:180px`)}>
+            {v.nav.prev && (
+              <button className="hv1" onClick={v.nav.prev.go}
+                style={css(`font-family:var(--font-ui);font-size:13px;font-weight:500;padding:6px 12px;border:1px solid var(--color-border);color:var(--color-text);background:var(--color-panel);border-radius:var(--radius-md);cursor:pointer`)}>
+                ← {v.nav.prev.label}
+              </button>
+            )}
+          </div>
+
+          {/* The dots are the whole flow at a glance — five screens, this one
+              filled, and each one reachable directly. */}
+          <div style={css(`display:flex;align-items:center;gap:8px`)}>
+            {v.tabs.map((t, i) => (
+              <button key={i} onClick={t.go} title={`${t.n}. ${t.label}`} aria-label={`Go to step ${t.n}: ${t.label}`}
+                style={css(`width:8px;height:8px;padding:0;border-radius:50%;cursor:pointer;border:1px solid ${t.active ? 'var(--color-accent)' : 'var(--color-neutral-400)'};background:${t.active ? 'var(--color-accent)' : 'transparent'}`)} />
+            ))}
+            <span style={css(`font-size:12px;color:var(--color-text-2);margin-left:4px;white-space:nowrap`)}>
+              Step {v.nav.n} of {v.nav.total} — {v.nav.title}
+            </span>
+          </div>
+
+          <div style={css(`flex:none;width:180px;display:flex;justify-content:flex-end`)}>
+            {v.nav.next && (
+              <button className="hvp" onClick={v.nav.next.go}
+                style={css(`font-family:var(--font-ui);font-size:13px;font-weight:500;padding:6px 14px;border:1px solid var(--color-accent);color:#fff;background:var(--color-accent);border-radius:var(--radius-md);cursor:pointer;white-space:nowrap`)}>
+                {v.nav.next.cta || v.nav.next.label} →
+              </button>
+            )}
+          </div>
+        </footer>
       </div>
     );
   }
