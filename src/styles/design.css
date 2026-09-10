@@ -6,84 +6,98 @@
    actually has a state to report. The typeface is the system UI stack, with a
    mono for anything that came out of the CRM verbatim. */
 
+/* Inter, self-hosted so the console renders identically offline and on a
+   cold cache. Four weights is the whole range the screens use. */
+@font-face { font-family: Inter; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/inter-400-latin.woff2") format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/inter-500-latin.woff2") format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/inter-600-latin.woff2") format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 700; font-display: swap; src: url("/fonts/inter-700-latin.woff2") format("woff2"); }
+
 :root {
   /* Ground and planes. Three surfaces: the page behind the panels, the panel
      itself, and the inset row/well nested inside one. */
-  --color-bg: #f6f7f9;
+  --color-bg: #f4f5f7;
   --color-panel: #ffffff;
   --color-panel-2: #f7f8fa;
-  --color-surface: #eef0f4;
-  --color-border: #e2e5ea;
-  --color-divider: #e8eaee;
+  --color-surface: #e9ebef;
+  --color-border: #e3e6ec;
+  --color-divider: color-mix(in srgb, #1a1f27 12%, transparent);
 
-  --color-text: #16191d;
-  --color-text-2: #646b76;
+  --color-text: #1a1f27;
+  --color-text-2: #6b7280;
 
   /* Cool neutral ramp — one lightness scale, used for chrome and text. */
   --color-neutral-100: #f6f7f9;
   --color-neutral-200: #eceef2;
-  --color-neutral-300: #dde1e7;
-  --color-neutral-400: #c1c7d0;
-  --color-neutral-500: #9aa2ae;
-  --color-neutral-600: #767e8b;
-  --color-neutral-700: #58606c;
-  --color-neutral-800: #3b424c;
-  --color-neutral-900: #23282f;
+  --color-neutral-300: #dcdfe6;
+  --color-neutral-400: #c1c6d0;
+  --color-neutral-500: #98a0ad;
+  --color-neutral-600: #6b7280;
+  --color-neutral-700: #4a5361;
+  --color-neutral-800: #2e3744;
+  --color-neutral-900: #1a1f27;
 
   /* Accent — interactive blue. Links, focus, selection, primary actions.
      Deliberately not a status colour: nothing is "blue" as a verdict. */
-  --color-accent: #2f6feb;
-  --color-accent-100: #eef4ff;
-  --color-accent-200: #d8e5ff;
-  --color-accent-300: #b3cdfd;
-  --color-accent-400: #7fabf8;
-  --color-accent-500: #4d88f2;
-  --color-accent-600: #2f6feb;
-  --color-accent-700: #1f56c4;
-  --color-accent-800: #17409a;
-  --color-accent-900: #142f6d;
+  --color-accent: #3b5fe0;
+  --color-accent-100: #eef2ff;
+  --color-accent-200: #d9e2ff;
+  --color-accent-300: #b8caff;
+  --color-accent-400: #8aa5f8;
+  --color-accent-500: #5b82f5;
+  --color-accent-600: #3b5fe0;
+  --color-accent-700: #2f4bc9;
+  --color-accent-800: #263c9e;
+  --color-accent-900: #1e2f6f;
 
-  /* Amber — reserved for held / awaiting approval / injected. It is the only
-     place amber appears, which is what makes a held call findable on a page. */
-  --color-accent-2: #b7791f;
-  --color-accent-2-100: #fdf5e6;
-  --color-accent-2-200: #f9e7c0;
-  --color-accent-2-300: #f0cf8b;
-  --color-accent-2-400: #ddb05a;
-  --color-accent-2-500: #c69233;
-  --color-accent-2-600: #b7791f;
-  --color-accent-2-700: #8d5c13;
-  --color-accent-2-800: #6a450f;
-  --color-accent-2-900: #48300e;
+  /* Second accent — a desaturated teal, for the few places that need a
+     non-status hue next to the blue without competing with it. */
+  --color-accent-2: #2f6f8f;
+  --color-accent-2-100: #e7f4f8;
+  --color-accent-2-200: #c9e6ef;
+  --color-accent-2-300: #9fd2e0;
+  --color-accent-2-400: #6bb4c8;
+  --color-accent-2-500: #3f92aa;
+  --color-accent-2-600: #2f6f8f;
+  --color-accent-2-700: #245670;
+  --color-accent-2-800: #1c4053;
+  --color-accent-2-900: #152e3b;
 
   /* Semantic status. Muted enough to sit next to body text all day. */
-  --color-pass: #17784b;
-  --color-held: var(--color-accent-2);
-  --color-fail: #c0342b;
+  --color-pass: #2f855a;
+  --color-held: var(--color-amber-600);
+  --color-fail: #c53030;
   --color-pending: var(--color-neutral-500);
 
+  /* Amber wash — the background behind a held or failed callout. */
+  --color-amber-100: #fdf3e0;
+  --color-amber-200: #f9e2b8;
+  --color-amber-600: #b7791f;
+  --color-amber-700: #935f14;
+  --color-amber-800: #714810;
+
   /* Type — one family for the interface, one for machine output. */
-  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-ui: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, "Cascadia Code", Consolas, monospace;
   --font-heading: var(--font-ui);
   --font-body: var(--font-ui);
   --font-heading-weight: 600;
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
+  --space-1: 4.6px;
+  --space-2: 9.2px;
+  --space-3: 13.8px;
+  --space-4: 18.4px;
+  --space-6: 27.6px;
+  --space-8: 36.8px;
 
-  --radius-sm: 4px;
+  --radius-sm: 3px;
   --radius-md: 6px;
   --radius-lg: 10px;
 
   /* Elevation — chrome sits on hairlines; shadow is for things that float. */
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
-  --shadow-lg: 0 16px 40px rgba(16, 24, 40, 0.16);
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #1a1f27 10%, transparent);
+  --shadow-md: 0 4px 14px color-mix(in srgb, #1a1f27 12%, transparent);
+  --shadow-lg: 0 16px 40px color-mix(in srgb, #1a1f27 18%, transparent);
 }
 
 body {
@@ -98,20 +112,20 @@ body {
 
 *, *::before, *::after { box-sizing: border-box; }
 body {
-  margin: 0; font-size: 14px; line-height: 1.55; font-weight: 400;
+  margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400;
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
   font-variant-numeric: tabular-nums;
 }
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading); font-weight: var(--font-heading-weight);
-  line-height: 1.2; letter-spacing: -0.011em; margin: 0 0 var(--space-2);
+  line-height: 1.14; letter-spacing: -0.02em; margin: 0 0 var(--space-2);
 }
-h1 { font-size: 26px; letter-spacing: -0.018em; }
-h2 { font-size: 21px; letter-spacing: -0.015em; }
-h3 { font-size: 17px; }
-h4 { font-size: 15px; }
-h5 { font-size: 14px; }
-h6 { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--color-text-2); }
+h1 { font-size: 34px; letter-spacing: -0.028em; }
+h2 { font-size: 27px; letter-spacing: -0.024em; }
+h3 { font-size: 22px; }
+h4 { font-size: 18px; }
+h5 { font-size: 15px; }
+h6 { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-2); }
 p { margin: 0 0 var(--space-3); }
 a { color: var(--color-accent-700); text-underline-offset: 3px; }
 img { display: block; max-width: 100%; }
