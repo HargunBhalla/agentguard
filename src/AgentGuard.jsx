@@ -4,7 +4,7 @@ import {
   compareAcrossCrms, verdictFor,
   ADAPTERS, adapterById, CASES, v18, v19, METRIC_ROWS, formatMetric, isRegression,
 } from './harness/index.js';
-import { rehearseAll, invariantStatus } from './harness/shadow.js';
+import { rehearseAll } from './harness/shadow.js';
 import { POLICIES, OUTCOME_LABEL, heaviest } from './harness/policies.js';
 import { runChaos, FAULTS, INJECTION_POINTS, MODIFIERS } from './harness/chaos.js';
 import { runTrace, runSaga } from './harness/trace.js';
@@ -31,8 +31,6 @@ const SUITES = Object.fromEntries(compareAcrossCrms().map((s) => [s.adapter.id, 
  */
 const SUITES_V18 = Object.fromEntries(compareAcrossCrms(v19, v18).map((s) => [s.adapter.id, s]));
 const REHEARSALS = Object.fromEntries(ADAPTERS.map((a) => [a.id, rehearseAll({ adapter: a })]));
-const INVARIANTS = Object.fromEntries(ADAPTERS.map((a) => [a.id, invariantStatus({ adapter: a })]));
-
 /** Traces are heavier and only one is on screen at a time, so they are cached lazily. */
 const traceCache = new Map();
 function traceFor(crm, buildId) {
@@ -406,10 +404,6 @@ export default class AgentGuard extends React.Component {
       hasRisk: !!(sel.risk && this.verdictOf(sel) !== 'safe'),
       approve: () => this.setState((s) => ({ decisions: { ...s.decisions, [sel.id]: 'approved' } })),
       block: () => this.setState((s) => ({ decisions: { ...s.decisions, [sel.id]: 'blocked' } })),
-      invariants: INVARIANTS[st.crm].map((i) => ({
-        expr: i.expr, detail: i.detail, mark: i.ok ? '✓' : '✗',
-        color: i.ok ? 'var(--color-text-2)' : 'var(--color-fail)',
-      })),
 
       spans, traceRun: t.run,
       traceHeadline: `${t.spans.length} spans · ${(t.totalMs / 1000).toFixed(1)}s · ${t.run.trace.length} CRM calls`,
@@ -441,9 +435,6 @@ export default class AgentGuard extends React.Component {
       evalLede: suite.candidate.id === 'v1.9'
         ? 'v1.8 struck through, v1.9 in front. The candidate completes more runs because it no longer abandons them at the first hard failure. That same change is why it gets more of them wrong.'
         : 'v1.9 struck through, v1.8 in front. v1.8 is the stricter build — it halts at the first hard failure instead of pushing past it, so it completes fewer runs, but the ones it finishes stay correct, which is why it trips fewer conditions.',
-      evalGateExplain: suite.candidate.id === 'v1.9'
-        ? 'Three changes in v1.9 account for the regressions. It writes straight from the search result instead of re-reading first, so an edit a rep made in between gets overwritten. It dropped the merge bar from 0.95 to 0.90 to catch more duplicates, and records scoring in that band are mostly sparse ones that score high only because they have few fields to disagree on. And it retries every error rather than only transient ones, so a 403 is retried three times and then written past. '
-        : 'v1.8 is the current build, and against v1.9 it shows no regressions on this suite — it verifies each record before writing, holds the merge bar at 0.95, and retries only transient errors, so it fails safe where v1.9 pushes through. The trade-off is the runs it abandons at the first hard failure, which is why its task-completion sits lower. ',
       metrics, cases, proposals, novel, portability,
       regressions: suite.regressions, brokenInBoth: suite.brokenInBoth,
       compareOpen: st.openCase != null, compare: this.compareFor(st.openCase),
@@ -1317,30 +1308,6 @@ return <div style={S.page}>
               >
                 Toggling a condition re-evaluates every queued mutation against the rehearsal already on file. No re-run is needed; only the predicate changed.
               </p>
-              <div
-                style={css("font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--color-text-2);margin:22px 0 9.2px;border-top:1px solid var(--color-border);padding-top:13.8px")}
-              >
-                {"Invariants, if all "}
-                {v.actions.length}
-                {" ran"}
-              </div>
-              {v.invariants.map((x,i)=><div key={i} style={css("padding:5px 0")}>
-                <div style={css("display:flex;gap:9.2px;align-items:baseline")}>
-                  <span style={css(`font-size:13px;color:${x.color};flex:none`)}>
-                    {x.mark}
-                  </span>
-                  <span
-                    style={css(`font-family:var(--font-mono);font-size:12px;line-height:1.5;color:${x.color}`)}
-                  >
-                    {x.expr}
-                  </span>
-                </div>
-                {x.detail&&<div
-                  style={css("font-size:12px;color:var(--color-accent-800);margin-left:21px")}
-                >
-                  {x.detail}
-                </div>}
-              </div>)}
             </div>
           </div>
         </div>}
@@ -2157,7 +2124,7 @@ return <div style={S.page}>
                 <div
                   style={css(`margin-top:11px;padding-top:11px;border-top:1px solid var(--color-border);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:${v.score.candidate.verdict==="pass"?"var(--color-pass)":"var(--color-fail)"}`)}
                 >
-                  {v.score.candidate.verdict==="pass"?"ready for production":"blocked"}
+                  {v.score.candidate.verdict==="pass"?"ready for production":"approved"}
                 </div>
                 <div
                   style={css("margin-top:9.2px;font-size:12.5px;color:var(--color-text-2)")}
@@ -2194,12 +2161,6 @@ return <div style={S.page}>
               </button>)}
             </div>
           </div>
-          <p
-            style={css("font-size:13.5px;line-height:1.8;max-width:82ch;margin-top:22px;color:var(--color-neutral-800)")}
-          >
-            {v.evalGateExplain}
-            {v.gate.outlook}
-          </p>
         </div>}
       </div>
     </div>;

@@ -53,6 +53,14 @@ export function clears(row, value) {
   return row.better === 'up' ? value >= row.bar : value <= row.bar;
 }
 
+/** How the measured value relates to the bar — the comparison the UI shows. */
+function comparisonSign(row, value) {
+  if (value == null) return row.better === 'up' ? '>=' : '<=';
+  if (value < row.bar) return '<';
+  if (value > row.bar) return '>=';
+  return row.better === 'up' ? '>=' : '<=';
+}
+
 /**
  * How close a measurement came, as a 0–1 fraction of its bar. This is what
  * makes the score continuous: a build that misses 98% accuracy by a point
@@ -85,7 +93,7 @@ export function scorecard(metrics, { thresholds = THRESHOLDS } = {}) {
       label: row.label,
       value: formatMetric(value, row.format),
       bar: formatMetric(row.bar, row.format),
-      direction: row.better === 'up' ? '≥' : '≤',
+      direction: comparisonSign(row, value),
       critical: !!row.critical,
       measured: value != null,
       ok,
