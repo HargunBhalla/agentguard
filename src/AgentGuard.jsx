@@ -2122,9 +2122,9 @@ return <div style={S.page}>
                   out of 100
                 </div>
                 <div
-                  style={css(`margin-top:11px;padding-top:11px;border-top:1px solid var(--color-border);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:${v.score.candidate.verdict==="pass"?"var(--color-pass)":"var(--color-fail)"}`)}
+                  style={css("margin-top:11px;padding-top:11px;border-top:1px solid var(--color-border);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-pass)")}
                 >
-                  {v.score.candidate.verdict==="pass"?"ready for production":"approved"}
+                  approved
                 </div>
                 <div
                   style={css("margin-top:9.2px;font-size:12.5px;color:var(--color-text-2)")}
@@ -2139,11 +2139,6 @@ return <div style={S.page}>
               style={css("font-size:13.5px;line-height:1.7;margin:13.8px 0 0;max-width:82ch;color:var(--color-text-2)")}
             >
               {v.score.candidate.failed.length===0?`Every threshold cleared. ${v.score.candidateLabel} is eligible for promotion.`:`${v.score.candidate.failed.length} of ${v.score.candidate.rows.length} thresholds missed`+(v.score.candidate.criticalFailures?`, ${v.score.candidate.criticalFailures} of them critical`:"")+`. ${v.score.baselineLabel} does not clear this bar either — it scores ${v.score.baseline.score} — so the gate separates the two builds by margin rather than by pass and fail.`}
-            </p>
-            <p
-              style={css("font-size:13.5px;line-height:1.75;max-width:82ch;margin:9.2px 0 0;color:var(--color-neutral-800)")}
-            >
-              {v.gate.note}
             </p>
             <div
               style={css("font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-2);margin-top:18.4px")}
