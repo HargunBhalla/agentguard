@@ -227,7 +227,7 @@ export default class AgentGuard extends React.Component {
 
     const decision = st.decisions[sel.id];
     const decisionNote = decision === 'approved'
-      ? `Executed against ${adapter.label} · checkpoint saved · ${sel.reversibility === 'irreversible' ? 'no undo exists' : 'undo available'}`
+      ? `Executed against ${adapter.label} · checkpoint saved`
       : decision === 'blocked' ? 'Blocked. The agent was told to re-plan without this mutation.' : '';
 
     const awaiting = actions.filter((a) => !st.decisions[a.id]).length;
