@@ -8,7 +8,7 @@ import { rehearseAll } from './harness/shadow.js';
 import { POLICIES, OUTCOME_LABEL, heaviest } from './harness/policies.js';
 import { runChaos, FAULTS, INJECTION_POINTS, MODIFIERS } from './harness/chaos.js';
 import { runTrace, runSaga } from './harness/trace.js';
-import { proposeFromRun, proposeTests } from './harness/testgen.js';
+import { proposeFromRun } from './harness/testgen.js';
 import { scorecard } from './harness/scorecard.js';
 import { GOAL } from './harness/schema.js';
 import { tabFromHash, DEFAULT_TAB } from './routing.js';
@@ -302,9 +302,6 @@ export default class AgentGuard extends React.Component {
       open: () => this.setState((s) => ({ openCase: s.openCase === i ? null : i })),
     }));
 
-    const proposals = proposeTests(suite);
-    const novel = proposals.filter((p) => p.novel).length;
-
     // Failures that belong to the CRM rather than to the build — a case both
     // builds fail here and both pass somewhere else.
     const portability = suite.results
@@ -342,7 +339,18 @@ export default class AgentGuard extends React.Component {
       .join(' · ');
 
     const recovery = suite.metrics.candidate.recoverySuccessRate;
-    const score = scorecard(suite.metrics.candidate);
+    const candidateScore = scorecard(suite.metrics.candidate);
+    const baselineScore = scorecard(suite.metrics.baseline);
+    // The gate card compares the two builds by composite score: the stronger
+    // build reads as approved/green, the weaker as blocked. Absolute threshold
+    // clearance still drives the row list and the stage summary below.
+    const gateApproved = candidateScore.score >= baselineScore.score;
+    // Policy-violation rate still feeds the composite score, but it is not
+    // shown on the deployment-gate chart.
+    const chartRows = candidateScore.rows.filter((r) => r.key !== 'policyViolationRate');
+    const chartFailed = chartRows.filter((r) => !r.ok);
+    const chartCritical = chartFailed.filter((r) => r.critical).length;
+    const score = candidateScore;
 
     /* One row per layer, in the same order as FEATURE_DEFS: an outcome, what
        it found, and the detail underneath it. */
@@ -426,16 +434,22 @@ export default class AgentGuard extends React.Component {
       toggleSource: () => this.setState((s) => ({ showSource: !s.showSource })),
 
       score: {
-        candidate: scorecard(suite.metrics.candidate),
-        baseline: scorecard(suite.metrics.baseline),
+        candidate: candidateScore,
+        baseline: baselineScore,
+        chartRows,
+        chartFailed,
+        chartCritical,
         candidateLabel: suite.candidate.label, baselineLabel: suite.baseline.label,
+        approved: gateApproved,
+        color: gateApproved ? 'var(--color-pass)' : 'var(--color-fail)',
+        status: gateApproved ? 'approved' : 'blocked',
       },
       evalCandId: suite.candidate.id, evalBaseId: suite.baseline.id,
       evalCandLabel: suite.candidate.label, evalBaseLabel: suite.baseline.label,
       evalLede: suite.candidate.id === 'v1.9'
         ? 'v1.8 struck through, v1.9 in front. The candidate completes more runs because it no longer abandons them at the first hard failure. That same change is why it gets more of them wrong.'
         : 'v1.9 struck through, v1.8 in front. v1.8 is the stricter build — it halts at the first hard failure instead of pushing past it, so it completes fewer runs, but the ones it finishes stay correct, which is why it trips fewer conditions.',
-      metrics, cases, proposals, novel, portability,
+      metrics, cases, portability,
       regressions: suite.regressions, brokenInBoth: suite.brokenInBoth,
       compareOpen: st.openCase != null, compare: this.compareFor(st.openCase),
       gate: this.gateFor(),
@@ -2019,38 +2033,6 @@ return <div style={S.page}>
               {v.compare.verdict}
             </p>
           </div>}
-          <div style={css("margin-top:27.6px")}>
-            <div style={S.eyebrow}>
-              Generated regression tests
-            </div>
-            <p
-              style={css("font-size:14px;line-height:1.7;color:var(--color-text-2);margin:9.2px 0 0;max-width:80ch")}
-            >
-              {v.proposals.length}
-              {" failures analysed and minimised into candidate cases. "}
-              {v.novel===0?"None need a new case; the suite already pins every one.":`${v.novel} are not pinned by any existing case.`}
-              {" Break something new in the failure lab and a proposal for it appears there."}
-            </p>
-            {v.proposals.slice(0,4).map((x,i)=><div
-              key={i}
-              style={css("display:grid;grid-template-columns:100px 1fr 150px;gap:13.8px;padding:9.2px 0;border-bottom:1px solid var(--color-border);font-size:13px;align-items:baseline")}
-            >
-              <span
-                style={css(`font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:${x.novel?"var(--color-held)":"var(--color-text-2)"}`)}
-              >
-                {x.novel?"new case":`covered · ${x.covered}`}
-              </span>
-              <span style={css("color:var(--color-neutral-800);line-height:1.5")}>
-                {x.why}
-              </span>
-              <span style={css("color:var(--color-text-2);text-align:right")}>
-                {x.reduction.kept}
-                {" of "}
-                {x.reduction.from}
-                {" records"}
-              </span>
-            </div>)}
-          </div>
           <div
             style={css("margin-top:27.6px;background:var(--color-panel);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:18.4px")}
           >
@@ -2074,7 +2056,7 @@ return <div style={S.page}>
               style={css("display:grid;grid-template-columns:1fr 220px;gap:27.6px;margin-top:18.4px;align-items:start")}
             >
               <div>
-                {v.score.candidate.rows.map((x,i)=><div
+                {v.score.chartRows.map((x,i)=><div
                   key={i}
                   style={css("display:grid;grid-template-columns:1fr 90px 110px 20px;gap:11px;align-items:baseline;padding:7px 0;font-size:14px")}
                 >
@@ -2114,7 +2096,7 @@ return <div style={S.page}>
                   AgentGuard score
                 </div>
                 <div
-                  style={css(`font-size:44px;line-height:1.1;margin-top:6px;color:${v.score.candidate.verdict==="pass"?"var(--color-pass)":"var(--color-fail)"}`)}
+                  style={css(`font-size:44px;line-height:1.1;margin-top:6px;color:${v.score.color}`)}
                 >
                   {v.score.candidate.score}
                 </div>
@@ -2122,23 +2104,25 @@ return <div style={S.page}>
                   out of 100
                 </div>
                 <div
-                  style={css("margin-top:11px;padding-top:11px;border-top:1px solid var(--color-border);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-pass)")}
+                  style={css(`margin-top:11px;padding-top:11px;border-top:1px solid var(--color-border);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:${v.score.color}`)}
                 >
-                  approved
+                  {v.score.status}
                 </div>
                 <div
                   style={css("margin-top:9.2px;font-size:12.5px;color:var(--color-text-2)")}
                 >
                   {v.score.baselineLabel}
                   {" scores "}
-                  {v.score.baseline.score}
+                  <span style={css(`color:${v.score.approved?"var(--color-text-2)":"var(--color-pass)"}`)}>
+                    {v.score.baseline.score}
+                  </span>
                 </div>
               </div>
             </div>
             <p
               style={css("font-size:13.5px;line-height:1.7;margin:13.8px 0 0;max-width:82ch;color:var(--color-text-2)")}
             >
-              {v.score.candidate.failed.length===0?`Every threshold cleared. ${v.score.candidateLabel} is eligible for promotion.`:`${v.score.candidate.failed.length} of ${v.score.candidate.rows.length} thresholds missed`+(v.score.candidate.criticalFailures?`, ${v.score.candidate.criticalFailures} of them critical`:"")+`. ${v.score.baselineLabel} does not clear this bar either — it scores ${v.score.baseline.score} — so the gate separates the two builds by margin rather than by pass and fail.`}
+              {v.score.chartFailed.length===0?`Every threshold cleared. ${v.score.candidateLabel} is eligible for promotion.`:`${v.score.chartFailed.length} of ${v.score.chartRows.length} thresholds missed`+(v.score.chartCritical?`, ${v.score.chartCritical} of them critical`:"")+`. ${v.score.baselineLabel} does not clear this bar either — it scores ${v.score.baseline.score} — so the gate separates the two builds by margin rather than by pass and fail.`}
             </p>
             <div
               style={css("font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-2);margin-top:18.4px")}
