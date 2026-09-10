@@ -1320,7 +1320,7 @@ return <div style={S.page}>
               <p
                 style={css("font-size:12.5px;line-height:1.7;color:var(--color-text-2);margin-top:13.8px")}
               >
-                Toggling a condition re-evaluates every queued mutation against the rehearsal already on file. No re-run is needed; only the predicate changed.
+                Toggling a condition re-evaluates every queued mutation against the rehearsal already on file.
               </p>
             </div>
           </div>
