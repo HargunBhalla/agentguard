@@ -418,7 +418,6 @@ export default class AgentGuard extends React.Component {
       simDone: st.sim === 'done', simNotDone: st.sim !== 'done', runSim: this.runSim,
       actions, sel, selDiff: sel.diff, selChecks, policies, decisionNote,
       awaiting, awaitingLabel, reviewedCount,
-      hasRisk: !!(sel.risk && this.verdictOf(sel) !== 'safe'),
       approve: () => this.setState((s) => ({ decisions: { ...s.decisions, [sel.id]: 'approved' } })),
       block: () => this.setState((s) => ({ decisions: { ...s.decisions, [sel.id]: 'blocked' } })),
 
@@ -1191,20 +1190,6 @@ return <div style={S.page}>
               >
                 {v.sel.detail}
               </p>
-              {v.hasRisk&&<div
-                style={css("margin-top:13.8px;background:var(--color-amber-100);border-left:3px solid var(--color-held);border-radius:var(--radius-md);padding:13.8px 18.4px;max-width:70ch;animation:ag-in .3s ease both")}
-              >
-                <div
-                  style={css("font-family:var(--font-ui);font-weight:600;letter-spacing:-.008em;font-size:19px;color:var(--color-amber-800)")}
-                >
-                  {v.sel.risk}
-                </div>
-                <p
-                  style={css("font-size:14px;line-height:1.7;margin:4.6px 0 0;color:var(--color-neutral-800)")}
-                >
-                  {v.sel.alt}
-                </p>
-              </div>}
               {v.simDone&&<div style={css("margin-top:22px")}>
                 <div style={S.eyebrow}>
                   State diff — predicted
