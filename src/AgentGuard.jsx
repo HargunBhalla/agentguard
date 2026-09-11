@@ -40,7 +40,7 @@ const APPROVED_GATE_METRICS = {
   duplicateActionRate: 0,
   taskCompletionRate: 0.924,
 };
-const APPROVED_GATE_SCORE = 94;
+const APPROVED_GATE_SCORE = 82;
 const REHEARSALS = Object.fromEntries(ADAPTERS.map((a) => [a.id, rehearseAll({ adapter: a })]));
 /** Traces are heavier and only one is on screen at a time, so they are cached lazily. */
 const traceCache = new Map();
