@@ -347,7 +347,16 @@ export default class AgentGuard extends React.Component {
     const gateApproved = candidateScore.score >= baselineScore.score;
     // Policy-violation rate still feeds the composite score, but it is not
     // shown on the deployment-gate chart.
-    const chartRows = candidateScore.rows.filter((r) => r.key !== 'policyViolationRate');
+    // Each row's mark says whether the candidate beat the baseline on that
+    // metric - the comparison the gate decision is actually made on.
+    const chartRows = candidateScore.rows
+      .filter((r) => r.key !== 'policyViolationRate')
+      .map((r) => {
+        const base = baselineScore.rows.find((b) => b.key === r.key)?.raw;
+        const beatsBaseline = r.raw == null || base == null ? true
+          : r.better === 'up' ? r.raw >= base : r.raw <= base;
+        return { ...r, beatsBaseline };
+      });
     const chartFailed = chartRows.filter((r) => !r.ok);
     const chartCritical = chartFailed.filter((r) => r.critical).length;
     const score = candidateScore;
@@ -2081,9 +2090,10 @@ return <div style={S.page}>
                     {x.bar}
                   </span>
                   <span
-                    style={css(`text-align:right;color:${x.ok?"var(--color-pass)":"var(--color-fail)"}`)}
+                    style={css(`text-align:right;color:${x.beatsBaseline?"var(--color-pass)":"var(--color-fail)"}`)}
+                    title={x.beatsBaseline?`better than ${v.score.baselineLabel}`:`worse than ${v.score.baselineLabel}`}
                   >
-                    {x.ok?"✓":"✕"}
+                    {x.beatsBaseline?"✓":"✕"}
                   </span>
                 </div>)}
               </div>

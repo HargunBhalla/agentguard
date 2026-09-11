@@ -91,6 +91,8 @@ export function scorecard(metrics, { thresholds = THRESHOLDS } = {}) {
     return {
       key: row.key,
       label: row.label,
+      raw: value,
+      better: row.better,
       value: formatMetric(value, row.format),
       bar: formatMetric(row.bar, row.format),
       direction: comparisonSign(row, value),
