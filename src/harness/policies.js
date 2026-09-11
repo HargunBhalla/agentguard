@@ -6,7 +6,7 @@ import { HIGH_VALUE, stageIndex } from './schema.js';
  *
  * Policies are predicates over a rehearsal, not labels attached to calls.
  * Each one is handed the projected before/after, the world the rehearsal
- * produced, the spans it recorded, and the adapter it ran against — and returns
+ * produced, the spans it recorded, and the adapter it ran against - and returns
  * the reasons it objects, or nothing.
  *
  * That shape is deliberate, and it is what makes the pre-flight screen honest:
@@ -32,7 +32,7 @@ const MUTATIONS = new Set([
 /**
  * The four outcomes a policy can return, ordered by how much they restrain the
  * run. A rehearsal's verdict is the heaviest outcome any policy reached, so
- * this order is the comparison — not a list of special cases.
+ * this order is the comparison - not a list of special cases.
  *
  *   allow    nothing objected
  *   warn     advisory: recorded on the trace, does not hold the call
@@ -54,7 +54,7 @@ export const POLICIES = [
     test: ({ world }) =>
       (world.audit || [])
         .filter((e) => e.type === 'company' && e.after === null && e.before?.tier === 'enterprise')
-        .map((e) => `${e.id} — ${e.before.name} is an enterprise account`),
+        .map((e) => `${e.id} - ${e.before.name} is an enterprise account`),
   },
 
   {
@@ -92,7 +92,7 @@ export const POLICIES = [
       const amount = Object.fromEntries(all(world, 'deal').map((d) => [d.id, d.amount]));
       return (world.audit || [])
         .filter((e) => e.op === 'change_stage' && (amount[e.id] ?? 0) >= HIGH_VALUE)
-        .map((e) => `${e.id} at $${(amount[e.id] / 1000).toFixed(0)}K — ${e.before.stage} → ${e.after.stage}`);
+        .map((e) => `${e.id} at $${(amount[e.id] / 1000).toFixed(0)}K - ${e.before.stage} → ${e.after.stage}`);
     },
   },
 

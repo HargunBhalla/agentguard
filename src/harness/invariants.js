@@ -16,7 +16,7 @@ export const INVARIANTS = [
     expr: 'merge(a, b) => identity(a) == identity(b)',
     check(world) {
       // Judged against the ground truth in the seed, which the agent never
-      // sees. Once a merge has run, the provider has deleted the evidence —
+      // sees. Once a merge has run, the provider has deleted the evidence -
       // this is the only place the mistake is still visible.
       return (world.merges || [])
         .filter((m) => {
@@ -24,7 +24,7 @@ export const INVARIANTS = [
           const y = world.identity[m.duplicate];
           return x && y && x !== y;
         })
-        .map((m) => `${m.duplicate} merged into ${m.primary} at ${m.confidence.toFixed(2)} — different people`);
+        .map((m) => `${m.duplicate} merged into ${m.primary} at ${m.confidence.toFixed(2)} - different people`);
     },
   },
 

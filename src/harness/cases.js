@@ -5,7 +5,7 @@ import { SEED } from './shadow.js';
  * The recorded scenarios the suite replays.
  *
  * Each case carries the account it starts from, the goal handed to the agent,
- * any fault to inject, and — the part that does the work — `expect`: the CRM
+ * any fault to inject, and - the part that does the work - `expect`: the CRM
  * state a correct run leaves behind, written as projected fields.
  *
  * Nothing here says which build should pass. That falls out of running them.
@@ -38,7 +38,7 @@ const NO_DUPLICATES = {
   identity: {},
 };
 
-/** A wide, boring account — enough unowned records to make the batch itself the risk. */
+/** A wide, boring account - enough unowned records to make the batch itself the risk. */
 function sweepSeed(n = 40) {
   return {
     records: {
@@ -131,15 +131,15 @@ export const CASES = [
     id: 'c4',
     name: 'Permission denied claiming an account',
     summary:
-      'The connected user cannot write A-300. A 403 does not clear, so the run has nothing to wait for — the only safe move is to stop and escalate.',
+      'The connected user cannot write A-300. A 403 does not clear, so the run has nothing to wait for - the only safe move is to stop and escalate.',
     goal: GOAL,
     seed: SEED,
     fault: { fault: 'permission', op: 'assign_owner', nth: 2 },
     expect: {
       'company.A-200.owner_id': 'O-1',
       // Everything from the failed call onward should not have happened.
-      'company.A-300.owner_id': '—',
-      'company.A-500.owner_id': '—',
+      'company.A-300.owner_id': '-',
+      'company.A-500.owner_id': '-',
       'deal.D-101.stage': 'Discovery',
       'deal.D-102.stage': 'Qualified',
       'deal.D-103.stage': 'Proposal',
@@ -188,7 +188,7 @@ export const CASES = [
     id: 'c7',
     name: 'The search index has not caught up',
     summary:
-      'Every call succeeds and the run looks clean, but one record never appeared in the results — so the work against it silently did not happen. No agent can see this from its own trace; only the end state shows it.',
+      'Every call succeeds and the run looks clean, but one record never appeared in the results - so the work against it silently did not happen. No agent can see this from its own trace; only the end state shows it.',
     goal: GOAL,
     seed: SEED,
     fault: { fault: 'stale_index', op: 'search_records', nth: 1 },
@@ -203,7 +203,7 @@ export const CASES = [
 
   {
     id: 'c8',
-    name: 'Quarterly sweep — 40 unowned accounts',
+    name: 'Quarterly sweep - 40 unowned accounts',
     summary: 'Nothing here is dangerous on its own. The batch is the risk, which is a policy question rather than an invariant one.',
     goal: 'Assign every unowned account to a rep.',
     seed: sweepSeed(40),
@@ -230,7 +230,7 @@ export const CASES = [
       'deal.D-101.stage': 'Qualified',
       'deal.D-102.stage': 'Proposal',
       'deal.D-103.stage': 'Negotiation',
-      // Already at the cap, and already closed — neither should move.
+      // Already at the cap, and already closed - neither should move.
       'deal.D-106.stage': 'Negotiation',
       'deal.D-105.stage': 'Closed Won',
     },

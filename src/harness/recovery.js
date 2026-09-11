@@ -8,7 +8,7 @@ import { insert, put, remove, project } from './world.js';
  * about the steps where no inverse exists.
  *
  * Every plan step carries the reversibility class the adapter assigned it, and
- * that class is a property of the provider rather than the operation — the same
+ * that class is a property of the provider rather than the operation - the same
  * delete is recoverable on HubSpot and permanent on Attio. A plan containing an
  * irreversible step is not a rollback. It is a partial rollback plus an
  * incident, and saying so is more useful than pretending otherwise.
@@ -21,7 +21,7 @@ function ourWrites(world) {
 
 /**
  * Build the compensating plan for a run. Steps come back in the order they
- * should be applied — reverse of the order they were written, so a record is
+ * should be applied - reverse of the order they were written, so a record is
  * restored before anything that depended on it.
  */
 export function planCompensation(world, adapter) {
@@ -51,7 +51,7 @@ export function planCompensation(world, adapter) {
 }
 
 /**
- * Apply a compensating plan to the world. Returns what it could not put back —
+ * Apply a compensating plan to the world. Returns what it could not put back -
  * an empty list means the run was fully undone, and anything in it is the
  * damage that survives.
  */

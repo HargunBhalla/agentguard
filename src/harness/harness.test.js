@@ -38,7 +38,7 @@ describe('world', () => {
     expect(deal._updated).toBe(0);
   });
 
-  it('does not alias the seed — two worlds mutate independently', () => {
+  it('does not alias the seed - two worlds mutate independently', () => {
     const a = createWorld(SEED);
     const b = createWorld(SEED);
     put(a, 'deal', 'D-101', { stage: 'Qualified' });
@@ -79,7 +79,7 @@ describe('world', () => {
     const { world } = bench();
     const shot = project(world);
     expect(shot['deal.D-101.stage']).toBe('Discovery');
-    expect(shot['company.A-200.owner_id']).toBe('—');
+    expect(shot['company.A-200.owner_id']).toBe('-');
     expect(shot['contact.count']).toBe('5');
     expect(Object.keys(shot).some((k) => k.includes('_v') || k.includes('_updated'))).toBe(false);
   });
@@ -109,7 +109,7 @@ describe('world', () => {
 });
 
 // ---------------------------------------------------------------------------
-// similarity — the fixture bands the whole merge story rests on
+// similarity - the fixture bands the whole merge story rests on
 // ---------------------------------------------------------------------------
 
 describe('match confidence', () => {
@@ -445,7 +445,7 @@ describe('policies', () => {
     expect(policyRun(act, { adapter: hubspot })).not.toContain('p7');
   });
 
-  it('turning a policy off makes the call go green — nothing else asserts it', () => {
+  it('turning a policy off makes the call go green - nothing else asserts it', () => {
     const { world, trace, ops } = bench();
     const before = project(world);
     ops.merge_records({ type: 'contact', primary: 'C-301', duplicate: 'C-302' });
@@ -485,7 +485,7 @@ describe('faults', () => {
     expect(() => hook({ op: 'change_stage' })).toThrow();
   });
 
-  it('a permanent fault is sticky — retrying changes nothing', () => {
+  it('a permanent fault is sticky - retrying changes nothing', () => {
     const hook = makeInjector({ fault: 'permission', op: 'assign_owner', nth: 1 });
     for (let i = 0; i < 3; i++) expect(() => hook({ op: 'assign_owner' })).toThrow(/403|Permission/);
   });
@@ -705,7 +705,7 @@ describe('metrics', () => {
     expect(formatMetric(9.84, 'num1')).toBe('9.8');
     expect(formatMetric(0.125, 'num2')).toBe('0.13');
     expect(formatMetric(2480, 'secs')).toBe('2.48s');
-    expect(formatMetric(null, 'pct')).toBe('—');
+    expect(formatMetric(null, 'pct')).toBe('-');
   });
 });
 
@@ -846,7 +846,7 @@ describe('runCase', () => {
     expect(typeof result.pass).toBe('boolean');
   });
 
-  it('is deterministic — the same case and build twice is byte-identical', () => {
+  it('is deterministic - the same case and build twice is byte-identical', () => {
     const a = runCase(CASES[0], v19);
     const b = runCase(CASES[0], v19);
     expect(a.pass).toBe(b.pass);
@@ -929,7 +929,7 @@ describe('compareBuilds', () => {
     }
   });
 
-  it('the candidate looks cheaper on a clean run — which is the trap', () => {
+  it('the candidate looks cheaper on a clean run - which is the trap', () => {
     const clean = comparison.results.find((r) => !r.fault);
     expect(clean.candidate.score.toolCalls).toBeLessThan(clean.baseline.score.toolCalls);
   });
@@ -1035,7 +1035,7 @@ describe('deployment gate', () => {
     const card = scorecard({ ...perfect, stateAccuracy: 0.9 });
     expect(card.verdict).toBe('block');
     expect(card.failed.map((r) => r.key)).toEqual(['stateAccuracy']);
-    // The score stays high — the verdict is the conjunction, not the score.
+    // The score stays high - the verdict is the conjunction, not the score.
     expect(card.score).toBeGreaterThan(90);
   });
 

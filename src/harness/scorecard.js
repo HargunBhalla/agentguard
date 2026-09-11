@@ -3,7 +3,7 @@ import { formatMetric } from './metrics.js';
 /**
  * The deployment gate.
  *
- * A build is not promoted because someone clicked promote — it is promoted
+ * A build is not promoted because someone clicked promote - it is promoted
  * because it cleared a fixed set of thresholds. Each row below is a metric the
  * suite already produced, a direction, and the bar it has to clear; the gate is
  * the conjunction of them. That makes the decision reproducible: the same
@@ -53,7 +53,7 @@ export function clears(row, value) {
   return row.better === 'up' ? value >= row.bar : value <= row.bar;
 }
 
-/** How the measured value relates to the bar — the comparison the UI shows. */
+/** How the measured value relates to the bar - the comparison the UI shows. */
 function comparisonSign(row, value) {
   if (value == null) return row.better === 'up' ? '>=' : '<=';
   if (value < row.bar) return '<';
@@ -81,7 +81,7 @@ function credit(row, value) {
  * Score a build's metrics against the gate.
  *
  * Returns the rows as they are rendered, the weighted composite out of 100,
- * and the gate's own verdict — `pass` only when every row clears, so the score
+ * and the gate's own verdict - `pass` only when every row clears, so the score
  * never talks a failing build through the gate.
  */
 export function scorecard(metrics, { thresholds = THRESHOLDS } = {}) {

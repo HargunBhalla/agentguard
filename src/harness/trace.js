@@ -10,8 +10,8 @@ import { hubspot } from './adapters.js';
  *
  * The connector spans are executed for real against a shadow account, so their
  * arguments, results and native requests are what the operations genuinely
- * produced. Three spans have no operation behind them — planning, tool
- * discovery, and the shadow rehearsal itself — and those are derived rather
+ * produced. Three spans have no operation behind them - planning, tool
+ * discovery, and the shadow rehearsal itself - and those are derived rather
  * than invented: the rehearsal span reports the diff and violation counts the
  * pre-flight gate actually found.
  */
@@ -98,7 +98,7 @@ export function runTrace({ adapter = hubspot, build = v19, caseId = 'c1' } = {})
 
 /**
  * The compensating plan for a run, as the rollback panel shows it. Built from
- * the audit log, so the steps are the writes that actually happened — and the
+ * the audit log, so the steps are the writes that actually happened - and the
  * ones with no inverse say so instead of claiming a clean restore.
  */
 export function runSaga({ adapter = hubspot, build = v19, caseId = 'c1' } = {}) {
@@ -107,7 +107,7 @@ export function runSaga({ adapter = hubspot, build = v19, caseId = 'c1' } = {}) 
 
   return {
     steps: plan.map((s) => ({
-      step: `${s.entry.op} — ${s.entry.type} ${s.entry.id}`,
+      step: `${s.entry.op} - ${s.entry.type} ${s.entry.id}`,
       state: s.class === 'irreversible' ? 'no inverse' : s.action === 'delete' ? 'reversible' : 'compensable',
       undo: s.detail,
       color:

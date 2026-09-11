@@ -78,7 +78,7 @@ export function runSuite(build, { adapter = hubspot, cases = CASES } = {}) {
 /**
  * The first step where two runs stop agreeing. Compared on the operation, the
  * record and the arguments that decide behaviour, so the same operation against
- * a different record — or with a version attached rather than not — counts as
+ * a different record - or with a version attached rather than not - counts as
  * divergence.
  */
 function divergenceIndex(a, b) {
@@ -135,7 +135,7 @@ export function compareBuilds(baseline = v18, candidate = v19, { adapter = hubsp
  *
  * This is the reason the adapters exist. A build can be clean on one provider
  * and regress on another, because what a provider will let you take back is not
- * uniform — and a rollout decision made on one CRM's numbers is a rollout
+ * uniform - and a rollout decision made on one CRM's numbers is a rollout
  * decision made blind for the other two.
  */
 export function compareAcrossCrms(baseline = v18, candidate = v19, { cases = CASES, adapters = ADAPTERS } = {}) {
@@ -150,7 +150,7 @@ export function verdictFor(row) {
     // Every check that failed, not just whichever is declared first. A run can
     // merge the wrong records and clobber a rep's edit in the same pass, and
     // naming one of the two sends somebody to debug half the problem.
-    const causes = candidate.violations.map((v) => `${v.expr} failed — ${v.detail}`);
+    const causes = candidate.violations.map((v) => `${v.expr} failed - ${v.detail}`);
     if (!causes.length) {
       const miss = candidate.score.misses[0];
       causes.push(`the CRM ended with ${miss.field} = ${miss.got} where a correct run leaves ${miss.want}`);
@@ -164,7 +164,7 @@ export function verdictFor(row) {
   if (row.brokenInBoth) {
     const miss = candidate.score.misses[0];
     return (
-      `Both builds fail this case, so it is not a regression — it is a defect neither version fixed. ` +
+      `Both builds fail this case, so it is not a regression - it is a defect neither version fixed. ` +
       (miss ? `The account ends with ${miss.field} = ${miss.got} where it should be ${miss.want}.` : '')
     );
   }
@@ -174,8 +174,8 @@ export function verdictFor(row) {
   }
 
   return (
-    `The builds diverge at step ${row.divergesAt + 1} — ${baseline.trace.length} calls against ` +
-    `${candidate.trace.length} — but reach the same final state, and every check holds. ` +
+    `The builds diverge at step ${row.divergesAt + 1} - ${baseline.trace.length} calls against ` +
+    `${candidate.trace.length} - but reach the same final state, and every check holds. ` +
     `Latency moved ${row.deltaLabel}.`
   );
 }

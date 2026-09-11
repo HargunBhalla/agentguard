@@ -1,5 +1,5 @@
 /**
- * The normalized CRM operation surface — the tools an agent is handed.
+ * The normalized CRM operation surface - the tools an agent is handed.
  *
  * Ten operations cover what agents actually do to a CRM. Every one of them
  * records a span carrying the arguments, the result, the latency the adapter
@@ -40,7 +40,7 @@ export class CrmError extends Error {
     this.transient = transient;
     this.retryAfter = retryAfter;
     // An ambiguous failure is one where the agent cannot tell whether the write
-    // landed — a timeout, not a rejection. Retrying is safe only under a key.
+    // landed - a timeout, not a rejection. Retrying is safe only under a key.
     this.ambiguous = ambiguous;
   }
 }
@@ -49,7 +49,7 @@ const readKey = (type, id) => `${type}:${id}`;
 
 /**
  * The record a span is about. Most operations name it `id`, but a merge names
- * two and an activity names its parent — and a trace that shows a blank there
+ * two and an activity names its parent - and a trace that shows a blank there
  * is a trace nobody can read.
  */
 const spanId = (args) => args.id ?? args.duplicate ?? args.about ?? null;
@@ -110,7 +110,7 @@ export function makeOps(world, trace, { adapter = hubspot, hook = null } = {}) {
 
     let result = body();
     // A response that lost fields in transit. The agent still gets a success,
-    // which is the point — it proceeds on a partial read.
+    // which is the point - it proceeds on a partial read.
     if (injected?.omit) {
       result = { ...result };
       for (const f of injected.omit) delete result[f];
@@ -221,7 +221,7 @@ export function makeOps(world, trace, { adapter = hubspot, hook = null } = {}) {
 
     /**
      * Stage moves go through their own operation rather than a generic update,
-     * because the pipeline is where the domain rules live — direction, closure,
+     * because the pipeline is where the domain rules live - direction, closure,
      * and whether the adapter can even represent the destination.
      */
     change_stage({ id, to, ifVersion = null, key = null }) {
@@ -236,7 +236,7 @@ export function makeOps(world, trace, { adapter = hubspot, hook = null } = {}) {
           const from = d.stage;
           // What the provider will actually hold. If the adapter's pipeline
           // cannot tell the requested stage apart from an earlier one, the
-          // value that comes back on the next read is the earlier one — so
+          // value that comes back on the next read is the earlier one - so
           // that is what the shadow CRM stores. The call still returns 200.
           // This is the sharpest example of why a green response is not an
           // outcome: the write succeeded and the deal did not move.

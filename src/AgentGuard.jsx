@@ -15,7 +15,7 @@ import { tabFromHash, DEFAULT_TAB } from './routing.js';
 
 /*
  * Everything the screens render is executed, not written down. The suite, the
- * rehearsals and the traces are computed once per CRM at module load — every
+ * rehearsals and the traces are computed once per CRM at module load - every
  * agent build runs against a fresh shadow account and every operation cost is
  * fixed, so the result is deterministic: the same nine cases, the same four
  * regressions, every reload.
@@ -26,7 +26,7 @@ const SUITES = Object.fromEntries(compareAcrossCrms().map((s) => [s.adapter.id, 
 /*
  * The build selector swaps which build is on trial, not just which one is
  * displayed, so the comparison has to be run in both directions. With v1.8
- * selected, v1.9 becomes the baseline and v1.8 the candidate — the same nine
+ * selected, v1.9 becomes the baseline and v1.8 the candidate - the same nine
  * cases, scored the other way round.
  */
 const SUITES_V18 = Object.fromEntries(compareAcrossCrms(v19, v18).map((s) => [s.adapter.id, s]));
@@ -109,7 +109,7 @@ export default class AgentGuard extends React.Component {
 
   componentDidMount() {
     window.addEventListener('hashchange', this.onHashChange);
-    // Give the first tab a hash too, so every tab is equally linkable — but
+    // Give the first tab a hash too, so every tab is equally linkable - but
     // replace rather than push, so Back still leaves the app on the first press.
     if (!window.location.hash) window.history.replaceState(null, '', `#${DEFAULT_TAB}`);
   }
@@ -175,7 +175,7 @@ export default class AgentGuard extends React.Component {
   /**
    * Every screen reads from one object. Building it in one place keeps the
    * numbers on the overview and the numbers on the screen they link to from
-   * ever drifting apart — they are the same values, read once.
+   * ever drifting apart - they are the same values, read once.
    */
   renderVals() {
     const st = this.state;
@@ -300,7 +300,7 @@ export default class AgentGuard extends React.Component {
 
     const cases = suite.results.map((r, i) => ({
       id: r.id, name: r.name,
-      fault: r.fault ? FAULTS.find((f) => f.id === r.fault.fault)?.name ?? r.fault.fault : '—',
+      fault: r.fault ? FAULTS.find((f) => f.id === r.fault.fault)?.name ?? r.fault.fault : '-',
       base: r.baseline.pass ? 'pass' : 'fail',
       cand: r.candidate.pass ? 'pass' : 'fail',
       delta: r.deltaLabel,
@@ -313,7 +313,7 @@ export default class AgentGuard extends React.Component {
       open: () => this.setState((s) => ({ openCase: s.openCase === i ? null : i })),
     }));
 
-    // Failures that belong to the CRM rather than to the build — a case both
+    // Failures that belong to the CRM rather than to the build - a case both
     // builds fail here and both pass somewhere else.
     const portability = suite.results
       .filter((r) => r.brokenInBoth && SUITES.hubspot.results.find((h) => h.id === r.id)?.brokenInBoth === false)
@@ -410,7 +410,6 @@ export default class AgentGuard extends React.Component {
         summary: `${actions.length} proposed CRM mutations evaluated before execution. ${approvedCount} cleared condition checks; ${heldCount} held.`,
         tiles: tiles.map((x) => ({ ...x, color: TONE[x.tone] })),
         path: path.map((x) => ({ ...x, glyph: GLYPH[x.mark], color: TONE[x.mark] })),
-        provider: 'Composio',
       },
       tabs, adapter, crm: st.crm, setCrm: this.setCrm, crms: ADAPTERS,
       build: st.build, buildLabel: this.buildObj.label,
@@ -475,7 +474,7 @@ export default class AgentGuard extends React.Component {
       evalCandLabel: suite.candidate.label, evalBaseLabel: suite.baseline.label,
       evalLede: suite.candidate.id === 'v1.9'
         ? 'v1.8 struck through, v1.9 in front. The candidate completes more runs because it no longer abandons them at the first hard failure. That same change is why it gets more of them wrong.'
-        : 'v1.9 struck through, v1.8 in front. v1.8 is the stricter build — it halts at the first hard failure instead of pushing past it, so it completes fewer runs, but the ones it finishes stay correct, which is why it trips fewer conditions.',
+        : 'v1.9 struck through, v1.8 in front. v1.8 is the stricter build - it halts at the first hard failure instead of pushing past it, so it completes fewer runs, but the ones it finishes stay correct, which is why it trips fewer conditions.',
       metrics, cases, portability,
       regressions: suite.regressions, brokenInBoth: suite.brokenInBoth,
       compareOpen: st.openCase != null, compare: this.compareFor(st.openCase),
@@ -549,7 +548,7 @@ export default class AgentGuard extends React.Component {
     return { ...COPY[choice], actions };
   }
 
-  /** A stable, human-sized name for this run — it is a label, not an identifier. */
+  /** A stable, human-sized name for this run - it is a label, not an identifier. */
   runId() {
     return `#${1800 + this.suite.results.length * 4 + ADAPTERS.findIndex((a) => a.id === this.state.crm)}`;
   }
@@ -572,7 +571,7 @@ export default class AgentGuard extends React.Component {
    * spans, because that is the shape of the question being asked of it: what
    * did the agent plan, what could it call, what did it do, can it be undone,
    * and did the account end up right. Only the execution stage expands into
-   * individual calls — the rest are one span each.
+   * individual calls - the rest are one span each.
    */
   traceView() {
     const st = this.state;
@@ -598,7 +597,7 @@ export default class AgentGuard extends React.Component {
     const rows = crmSpans.map((sp) => {
       const [op, target] = sp.name.split(' · ');
       return {
-        id: sp.id, op, target: target || '—', tn: tone(sp.status), ms: sp.ms,
+        id: sp.id, op, target: target || '-', tn: tone(sp.status), ms: sp.ms,
         sel: st.traceSel === sp.id,
         select: () => this.setState({ traceSel: sp.id }),
       };
@@ -655,8 +654,8 @@ export default class AgentGuard extends React.Component {
   }
 
   /**
-   * What the detail pane says about one selection. Recovery is not a span —
-   * it is the compensating plan built from the audit log — so it is described
+   * What the detail pane says about one selection. Recovery is not a span -
+   * it is the compensating plan built from the audit log - so it is described
    * separately rather than being forced into the span shape.
    */
   traceDetail(id, spans, verifySpan, saga) {
@@ -711,7 +710,7 @@ export default class AgentGuard extends React.Component {
       } : failed ? {
         color: 'var(--color-fail)', bg: 'var(--color-amber-100)',
         title: 'Did not reach the expected state',
-        text: 'This span ended in a mismatch — the account was left different from a clean run.',
+        text: 'This span ended in a mismatch - the account was left different from a clean run.',
       } : null,
       summary: [
         ['Status', tn.label],
@@ -722,7 +721,7 @@ export default class AgentGuard extends React.Component {
       ].filter(Boolean),
       request: span.args, response: span.result,
       policy: span.cls === 'irreversible'
-        ? 'Irreversible on this CRM — the policy engine requires approval before it can run.'
+        ? 'Irreversible on this CRM - the policy engine requires approval before it can run.'
         : held
           ? 'Held by the shadow gate: one or more active policies objected to this call.'
           : 'Cleared every active policy on the pre-flight rehearsal.',
@@ -795,7 +794,7 @@ export default class AgentGuard extends React.Component {
       topbar: css(`display:flex;align-items:center;justify-content:space-between;gap:13.8px;padding:9.2px 32px;background:var(--color-panel);border-bottom:1px solid var(--color-border);flex:none`),
     };
 
-    /* The sidebar names the four things you can do, not the five screens —
+    /* The sidebar names the four things you can do, not the five screens -
        the trace and the failure lab are the same job seen twice, so they
        share a nav item. */
     const NAV = [
@@ -810,7 +809,7 @@ return <div style={S.page}>
       <aside style={S.side}>
         <a
           href="#pipeline"
-          aria-label="AgentGuard — overview"
+          aria-label="AgentGuard - overview"
           style={css("display:inline-flex;align-items:center;gap:9px;font-family:var(--font-heading);font-weight:700;letter-spacing:-.02em;font-size:19px;color:inherit;text-decoration:none;cursor:pointer;padding:6px 9.2px 13.8px")}
         >
           <span
@@ -876,10 +875,10 @@ return <div style={S.page}>
               style={S.sel}
             >
               <option value="v1.8">
-                v1.8 — current
+                v1.8 - current
               </option>
               <option value="v1.9">
-                v1.9 — candidate
+                v1.9 - candidate
               </option>
             </select>
           </div>
@@ -980,16 +979,10 @@ return <div style={S.page}>
                   </div>)}
                 </div>
                 <div
-                  style={css("border-top:1px solid var(--color-border);padding:11px 22px;font-size:12px;color:var(--color-text-2);display:flex;justify-content:space-between;gap:11px")}
+                  style={css("border-top:1px solid var(--color-border);padding:11px 22px;font-size:12px;color:var(--color-text-2)")}
                 >
-                  <span>
-                    {"Execution provider: "}
-                    {v.run.provider}
-                  </span>
-                  <span>
-                    {"CRM adapter: "}
-                    {v.adapter.label}
-                  </span>
+                  {"CRM adapter: "}
+                  {v.adapter.label}
                 </div>
               </div>
               <div style={S.panel}>
@@ -1044,7 +1037,7 @@ return <div style={S.page}>
               <summary
                 style={css("cursor:pointer;font-size:13px;color:var(--color-text-2);padding:6px 0")}
               >
-                CRM capabilities — where the three adapters differ
+                CRM capabilities - where the three adapters differ
               </summary>
               <div
                 style={css("font-size:13px;line-height:1.6;color:var(--color-text-2);margin:9.2px 0 0;max-width:80ch")}
@@ -1211,7 +1204,7 @@ return <div style={S.page}>
               </p>
               {v.simDone&&<div style={css("margin-top:22px")}>
                 <div style={S.eyebrow}>
-                  State diff — predicted
+                  State diff - predicted
                 </div>
                 {v.selDiff.map((x,i)=><div
                   key={i}
@@ -1357,7 +1350,7 @@ return <div style={S.page}>
                   <h1
                     style={css("font-family:var(--font-heading);font-weight:600;letter-spacing:-.02em;font-size:26px;margin:0")}
                   >
-                    {"Trace — Run "}
+                    {"Trace - Run "}
                     {trace.runId}
                   </h1>
                   <span
@@ -1679,7 +1672,7 @@ return <div style={S.page}>
               >
                 {v.faults.map(x=><option key={x.id} value={x.id}>
                   {x.name}
-                  {x.transient?"":" — permanent"}
+                  {x.transient?"":" - permanent"}
                 </option>)}
               </select>
             </label>
@@ -2055,7 +2048,7 @@ return <div style={S.page}>
               <span
                 style={css("font-family:var(--font-ui);font-weight:560;letter-spacing:-.008em;font-size:22px")}
               >
-                {"Deployment gate — agent "}
+                {"Deployment gate - agent "}
                 {v.score.candidateLabel}
               </span>
               <span
@@ -2136,7 +2129,7 @@ return <div style={S.page}>
             <p
               style={css("font-size:13.5px;line-height:1.7;margin:13.8px 0 0;max-width:82ch;color:var(--color-text-2)")}
             >
-              {v.score.chartFailed.length===0?`Every threshold cleared. ${v.score.candidateLabel} is eligible for promotion.`:`${v.score.chartFailed.length} of ${v.score.chartRows.length} thresholds missed`+(v.score.chartCritical?`, ${v.score.chartCritical} of them critical`:"")+`. ${v.score.baselineLabel} does not clear this bar either — it scores ${v.score.baseline.score} — so the gate separates the two builds by margin rather than by pass and fail.`}
+              {v.score.chartFailed.length===0?`Every threshold cleared. ${v.score.candidateLabel} is eligible for promotion.`:`${v.score.chartFailed.length} of ${v.score.chartRows.length} thresholds missed`+(v.score.chartCritical?`, ${v.score.chartCritical} of them critical`:"")+`. ${v.score.baselineLabel} does not clear this bar either - it scores ${v.score.baseline.score} - so the gate separates the two builds by margin rather than by pass and fail.`}
             </p>
             <div
               style={css("font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-2);margin-top:18.4px")}

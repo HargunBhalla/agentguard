@@ -3,7 +3,7 @@
  *
  * Everything above this file speaks one vocabulary: the normalized operations
  * in ops.js and the stages in schema.js. An adapter is the translation down to
- * one provider — its object names, its stage values, the request it would
+ * one provider - its object names, its stage values, the request it would
  * actually issue, and what it is willing to undo.
  *
  * The last of those is the interesting one. Reversibility is not a property of
@@ -13,7 +13,7 @@
  * is therefore not automatically safe on another, and recovery.js reads that
  * difference off the adapter rather than assuming a rollback always exists.
  *
- * Native requests are recorded on every span but never sent — the harness runs
+ * Native requests are recorded on every span but never sent - the harness runs
  * entirely against the shadow world. They are here so a trace shows the call a
  * live deployment would have made, and so an adapter's mapping is reviewable.
  */
@@ -25,7 +25,7 @@ import { STAGES } from './schema.js';
  *
  *   reversible    an exact inverse exists (delete what was created).
  *   compensable   no inverse, but the prior values were captured and can be
- *                 written back — the record's history shows both writes.
+ *                 written back - the record's history shows both writes.
  *   irreversible  cannot be undone by any sequence of API calls. These are the
  *                 operations that have to be stopped before they run, because
  *                 afterwards there is nothing to stop.
@@ -56,7 +56,7 @@ function makeAdapter(spec) {
     supports: (type) => spec.objects[type] != null,
     /**
      * Native stage value. Adapters whose pipeline is coarser than the canonical
-     * one map several stages onto the same value — see `collapses` below.
+     * one map several stages onto the same value - see `collapses` below.
      */
     stage: (s) => spec.stages[s] ?? s,
     /**
@@ -110,7 +110,7 @@ export const hubspot = makeAdapter({
       case 'get_record': return { method: 'GET', path: `${at}/${a.id}` };
       case 'create_record': return { method: 'POST', path: at, body: { properties: a.values } };
       case 'update_record': return { method: 'PATCH', path: `${at}/${a.id}`, body: { properties: a.patch } };
-      case 'delete_record': return { method: 'DELETE', path: `${at}/${a.id}`, note: 'archive — restorable for 90 days' };
+      case 'delete_record': return { method: 'DELETE', path: `${at}/${a.id}`, note: 'archive - restorable for 90 days' };
       case 'change_stage': return { method: 'PATCH', path: `${this.base}/objects/deals/${a.id}`, body: { properties: { dealstage: this.stages[a.to] } } };
       case 'assign_owner': return { method: 'PATCH', path: `${at}/${a.id}`, body: { properties: { hubspot_owner_id: a.owner } } };
       case 'merge_records': return { method: 'POST', path: `${at}/merge`, body: { primaryObjectId: a.primary, objectIdToMerge: a.duplicate } };
@@ -153,7 +153,7 @@ export const salesforce = makeAdapter({
       case 'get_record': return { method: 'GET', path: `${at}/${a.id}` };
       case 'create_record': return { method: 'POST', path: at, body: a.values };
       case 'update_record': return { method: 'PATCH', path: `${at}/${a.id}`, body: a.patch };
-      case 'delete_record': return { method: 'DELETE', path: `${at}/${a.id}`, note: 'recycle bin — undeletable for 15 days' };
+      case 'delete_record': return { method: 'DELETE', path: `${at}/${a.id}`, note: 'recycle bin - undeletable for 15 days' };
       case 'change_stage': return { method: 'PATCH', path: `${this.base}/sobjects/Opportunity/${a.id}`, body: { StageName: this.stages[a.to] } };
       case 'assign_owner': return { method: 'PATCH', path: `${at}/${a.id}`, body: { OwnerId: a.owner } };
       case 'merge_records': return { method: 'POST', path: `${this.base}/composite/sobjects/merge/${obj}/${a.primary}`, body: { recordToMergeIds: [a.duplicate] } };
@@ -172,7 +172,7 @@ export const attio = makeAdapter({
     company: 'companies',
     contact: 'people',
     deal: 'deals',
-    // Attio has no Lead object — inbound records live on a list instead, so a
+    // Attio has no Lead object - inbound records live on a list instead, so a
     // workflow written against leads has nowhere to land here.
     lead: null,
     task: 'tasks',
@@ -190,7 +190,7 @@ export const attio = makeAdapter({
     'Closed Won': 'Won',
     'Closed Lost': 'Lost',
   },
-  // Deletes are permanent, and there is no merge endpoint — a "merge" is a
+  // Deletes are permanent, and there is no merge endpoint - a "merge" is a
   // relink followed by a delete, so both are one-way doors.
   reversibility: { delete_record: 'irreversible', merge_records: 'irreversible' },
   cost: { search_records: 120, get_record: 60, create_record: 100, update_record: 95, delete_record: 90, change_stage: 95, assign_owner: 85, merge_records: 210, create_task: 80, add_note: 70 },
@@ -202,10 +202,10 @@ export const attio = makeAdapter({
       case 'get_record': return { method: 'GET', path: `${at}/${a.id}` };
       case 'create_record': return { method: 'PUT', path: at, body: { data: { values: a.values } } };
       case 'update_record': return { method: 'PATCH', path: `${at}/${a.id}`, body: { data: { values: a.patch } } };
-      case 'delete_record': return { method: 'DELETE', path: `${at}/${a.id}`, note: 'permanent — no recycle bin' };
+      case 'delete_record': return { method: 'DELETE', path: `${at}/${a.id}`, note: 'permanent - no recycle bin' };
       case 'change_stage': return { method: 'PATCH', path: `${this.base}/objects/deals/records/${a.id}`, body: { data: { values: { stage: this.stages[a.to] } } } };
       case 'assign_owner': return { method: 'PATCH', path: `${at}/${a.id}`, body: { data: { values: { owner: a.owner } } } };
-      case 'merge_records': return { method: 'DELETE', path: `${at}/${a.duplicate}`, note: `relink to ${a.primary}, then permanent delete — no merge endpoint` };
+      case 'merge_records': return { method: 'DELETE', path: `${at}/${a.duplicate}`, note: `relink to ${a.primary}, then permanent delete - no merge endpoint` };
       case 'create_task': return { method: 'POST', path: `${this.base}/tasks`, body: { data: { content: a.subject, assignees: [a.owner] } } };
       case 'add_note': return { method: 'POST', path: `${this.base}/notes`, body: { data: { content: a.body, parent_record_id: a.about } } };
       default: return { method: 'POST', path: at };

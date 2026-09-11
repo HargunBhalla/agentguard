@@ -20,7 +20,7 @@ export function css(text) {
   const style = {};
   let depth = 0;
   let start = 0;
-  // Split on top-level semicolons only — `color-mix(in srgb, a, b)` and
+  // Split on top-level semicolons only - `color-mix(in srgb, a, b)` and
   // `url(data:...;base64,...)` both contain characters we must not split on.
   for (let i = 0; i <= text.length; i++) {
     const ch = text[i];

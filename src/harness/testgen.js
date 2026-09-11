@@ -28,7 +28,7 @@ function idIn(field) {
 /**
  * What this failure is about, for deduplication against the existing suite.
  *
- * Every invariant that failed, not just the first — a run that both merged the
+ * Every invariant that failed, not just the first - a run that both merged the
  * wrong records and clobbered a rep's edit is two findings, and collapsing it
  * to whichever check happens to be declared first would file it under the
  * wrong one.
@@ -85,7 +85,7 @@ function assertionsFor(run) {
  * names the rule and a miss names the damage.
  */
 function causes(run) {
-  const out = run.violations.map((v) => `${v.expr} failed — ${v.detail}`);
+  const out = run.violations.map((v) => `${v.expr} failed - ${v.detail}`);
   for (const m of run.score.misses.slice(0, 2)) {
     out.push(`${m.field} ended at ${m.got} where a correct run leaves ${m.want}`);
   }
@@ -98,10 +98,10 @@ const why = (run) => causes(run).slice(0, 2).join('; ');
 function headline(run, testCase) {
   if (run.violations.length) {
     const ids = [...new Set(run.violations.map((v) => v.id))];
-    return `${ids.join(' + ').replace(/_/g, ' ')} — minimised from ${testCase.id}`;
+    return `${ids.join(' + ').replace(/_/g, ' ')} - minimised from ${testCase.id}`;
   }
   const m = run.score.misses[0];
-  return m ? `${m.field} regression — minimised from ${testCase.id}` : `incomplete run — minimised from ${testCase.id}`;
+  return m ? `${m.field} regression - minimised from ${testCase.id}` : `incomplete run - minimised from ${testCase.id}`;
 }
 
 /** Render a proposal as source a developer can paste into cases.js. */
@@ -124,7 +124,7 @@ function toSource(p) {
 
 /**
  * Propose a regression case from one failing run.
- * Returns null for a run that passed — there is nothing to pin.
+ * Returns null for a run that passed - there is nothing to pin.
  */
 export function proposeFromRun(run, testCase, { existing = CASES } = {}) {
   if (run.pass) return null;

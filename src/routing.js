@@ -4,7 +4,7 @@
  * Tabs live in the URL hash rather than in component state alone, so Back and
  * Forward move between them, a reload keeps you where you were, and a tab can
  * be linked to directly. The hash is used in preference to a path because
- * Pages serves static files — a path route would 404 on refresh.
+ * Pages serves static files - a path route would 404 on refresh.
  */
 export const TABS = ['pipeline', 'preflight', 'trace', 'chaos', 'evals'];
 

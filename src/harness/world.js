@@ -2,7 +2,7 @@
  * The shadow CRM the harness replays against.
  *
  * A plain object holding records by type, plus an audit log and a monotonic
- * clock. Agents never touch it directly — they go through the normalized
+ * clock. Agents never touch it directly - they go through the normalized
  * operations in ops.js, so every mutation is recorded, every read is dated, and
  * every run is reproducible.
  *
@@ -15,7 +15,7 @@
 export const TYPES = ['company', 'contact', 'deal', 'lead', 'task', 'note', 'owner'];
 
 /**
- * Dice coefficient over character bigrams — the fuzzy match behind duplicate
+ * Dice coefficient over character bigrams - the fuzzy match behind duplicate
  * detection. Every CRM ships something like this; what differs between agent
  * builds is the confidence they will act on.
  */
@@ -42,8 +42,8 @@ export function similarity(a, b) {
 }
 
 /**
- * Confidence that two contacts are the same person. Email dominates — it is the
- * one field a CRM treats as near-unique — but a matching name on its own is not
+ * Confidence that two contacts are the same person. Email dominates - it is the
+ * one field a CRM treats as near-unique - but a matching name on its own is not
  * evidence, so the name only ever pulls the score toward the email's verdict.
  */
 export function matchConfidence(a, b) {
@@ -93,7 +93,7 @@ export function get(world, type, id) {
 /**
  * Write a patch onto a record, bumping its version and stamping the clock. The
  * prior field values go into the audit log, which is what compensating actions
- * are rebuilt from — recovery reads history rather than guessing at an inverse.
+ * are rebuilt from - recovery reads history rather than guessing at an inverse.
  */
 export function put(world, type, id, patch, op = 'update_record') {
   const target = world.records[type][id];
@@ -123,14 +123,14 @@ export function remove(world, type, id, op = 'delete_record') {
 }
 
 /**
- * Flatten a world into the comparable fields a diff is expressed in — the
+ * Flatten a world into the comparable fields a diff is expressed in - the
  * things an operator would recognise on a record page. Internal bookkeeping
  * (`_v`, `_updated`) stays out, so a version bump alone never reads as a change.
  */
 export function project(world) {
   const out = {};
   const field = (type, id, name, value) => {
-    out[`${type}.${id}.${name}`] = value == null ? '—' : String(value);
+    out[`${type}.${id}.${name}`] = value == null ? '-' : String(value);
   };
   for (const c of all(world, 'company')) {
     field('company', c.id, 'owner_id', c.owner_id);
@@ -154,7 +154,7 @@ export function project(world) {
 
 /**
  * Projected fields one audit entry could have moved. Used to attribute a wrong
- * end state back to the mutation that caused it — the difference between "this
+ * end state back to the mutation that caused it - the difference between "this
  * run is wrong" and "this call is wrong".
  */
 export function fieldsTouched(entry) {
@@ -168,5 +168,5 @@ export function diffProjections(before, after) {
   return Object.keys({ ...before, ...after })
     .filter((k) => before[k] !== after[k])
     .sort()
-    .map((k) => ({ field: k, before: before[k] ?? '—', after: after[k] ?? '—' }));
+    .map((k) => ({ field: k, before: before[k] ?? '-', after: after[k] ?? '-' }));
 }

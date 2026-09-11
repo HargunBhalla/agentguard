@@ -6,7 +6,7 @@ import { project, fieldsTouched } from './world.js';
  * The metric that matters most here is the one that is easiest to get wrong:
  * an agent is not correct because its calls returned 200, it is correct because
  * the CRM ended up in the right state. So every score below is computed against
- * the case's `expect` — the state a correct run leaves behind — rather than
+ * the case's `expect` - the state a correct run leaves behind - rather than
  * against the agent's own account of what it did.
  *
  * Completion and correctness are deliberately separate. A build that stops at
@@ -24,7 +24,7 @@ export function mutations(world) {
 
 /**
  * Duplicate work: records this run created that duplicate something already
- * there. Writes the world deduplicated by idempotency key do not count — those
+ * there. Writes the world deduplicated by idempotency key do not count - those
  * are retries that were caught, which is the system working.
  */
 export function duplicateActions(world) {
@@ -56,8 +56,8 @@ export function scoreRun({ world, trace, report, violations, policyHits, ms }, t
   const expected = testCase.expect || {};
 
   const misses = Object.entries(expected)
-    .filter(([field, want]) => (final[field] ?? '—') !== want)
-    .map(([field, want]) => ({ field, want, got: final[field] ?? '—' }));
+    .filter(([field, want]) => (final[field] ?? '-') !== want)
+    .map(([field, want]) => ({ field, want, got: final[field] ?? '-' }));
 
   const wrongFields = new Set(misses.map((m) => m.field));
   const writes = mutations(world);
@@ -84,7 +84,7 @@ export function scoreRun({ world, trace, report, violations, policyHits, ms }, t
     stateAccuracy,
     misses,
     // Only meaningful where something went wrong. Recovery is not "did it keep
-    // going" — it is "did it end up where it should have anyway".
+    // going" - it is "did it end up where it should have anyway".
     recovered: testCase.fault ? misses.length === 0 : null,
   };
 }
@@ -132,7 +132,7 @@ export const METRIC_ROWS = [
 ];
 
 export function formatMetric(value, format) {
-  if (value == null) return '—';
+  if (value == null) return '-';
   switch (format) {
     case 'pct': return `${(value * 100).toFixed(1)}%`;
     case 'num1': return value.toFixed(1);

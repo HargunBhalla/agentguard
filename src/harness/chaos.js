@@ -18,7 +18,7 @@ export { FAULTS, INJECTION_POINTS };
  * is a diff against the same case run clean.
  *
  * When the run leaves the account wrong, the compensating plan is built from
- * the audit log and applied — and whatever it cannot put back is reported as
+ * the audit log and applied - and whatever it cannot put back is reported as
  * exactly that, rather than as a successful rollback.
  */
 
@@ -48,7 +48,7 @@ function narrate(run, fault, target, adapter) {
       const e = span.error;
       const kind = e.transient ? 'transient' : 'permanent';
       say(
-        `${span.op}${span.id ? ` ${span.id}` : ''} failed — ${e.code} ${e.message} (${kind}).` +
+        `${span.op}${span.id ? ` ${span.id}` : ''} failed - ${e.code} ${e.message} (${kind}).` +
           (e.transient ? ` Backing off ${attempt * 2}s.` : ' Waiting will not help.'),
         e.transient ? GOLD : DEEP
       );
@@ -63,7 +63,7 @@ function narrate(run, fault, target, adapter) {
     }
 
     if (span.result?.deduped) {
-      say(`${span.op} replayed under a key the account had already seen — no second write.`, GOLD);
+      say(`${span.op} replayed under a key the account had already seen - no second write.`, GOLD);
       continue;
     }
     if (span.result?.noop) {
@@ -119,7 +119,7 @@ export function runChaos({
   const duplicates = duplicateActions(run.world);
 
   // Consistency is measured against the state a correct run leaves behind, and
-  // `clean` is the same case replayed without the fault — the control the
+  // `clean` is the same case replayed without the fault - the control the
   // faulted run is read against rather than a description of what should have
   // happened.
   const misses = run.score.misses;
@@ -130,7 +130,7 @@ export function runChaos({
     log.push({
       t: ((elapsed + 680) / 1000).toFixed(2) + 's',
       text: recovery.clean
-        ? `Compensating plan applied — ${recovery.plan.length} writes undone. ${recovery.summary}`
+        ? `Compensating plan applied - ${recovery.plan.length} writes undone. ${recovery.summary}`
         : `Compensating plan applied, but ${recovery.unrecoverable.length} step${recovery.unrecoverable.length === 1 ? '' : 's'} had no inverse on ${adapter.label}. ${recovery.summary}`,
       color: recovery.clean ? GOLD : DEEP,
     });
@@ -144,14 +144,14 @@ export function runChaos({
       : misses.length === 0
         ? 'Recovered cleanly.'
         : permanentDamage
-          ? 'Completed — and did permanent damage.'
+          ? 'Completed - and did permanent damage.'
           : 'Completed, but the account is wrong.',
     border: misses.length ? 'var(--color-accent)' : 'var(--color-divider)',
     color: permanentDamage ? DEEP : misses.length || run.report.halted ? GOLD : 'var(--color-text)',
     checks: [
       {
         label: 'Recovered',
-        value: run.report.halted ? 'No — halted' : misses.length === 0 ? `Yes · ${(elapsed / 1000).toFixed(1)}s` : 'No — completed wrong',
+        value: run.report.halted ? 'No - halted' : misses.length === 0 ? `Yes · ${(elapsed / 1000).toFixed(1)}s` : 'No - completed wrong',
         note: run.report.halted
           ? `${f.name} is not retryable; the agent stopped and escalated.`
           : misses.length === 0
@@ -177,7 +177,7 @@ export function runChaos({
       },
       {
         label: 'Recoverable',
-        value: permanentDamage ? `No — ${permanentDamage} permanent` : recovery ? (recovery.clean ? 'Rolled back' : 'Partly') : 'Yes',
+        value: permanentDamage ? `No - ${permanentDamage} permanent` : recovery ? (recovery.clean ? 'Rolled back' : 'Partly') : 'Yes',
         note: permanentDamage
           ? run.unrecoverable[0]
           : recovery

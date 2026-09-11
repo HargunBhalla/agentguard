@@ -6,7 +6,7 @@ import { stageIndex, isClosed, STAGES } from './schema.js';
  *
  * They share one body. Everything separating v1.9 from v1.8 is the three
  * settings below, and each one is the kind of change that gets merged without
- * argument — fewer API calls, more duplicates caught, fewer runs abandoned:
+ * argument - fewer API calls, more duplicates caught, fewer runs abandoned:
  *
  *   verifyBeforeWrite  v1.8 re-reads a record immediately before writing to it
  *                      and sends the version it saw. v1.9 writes straight from
@@ -15,8 +15,8 @@ import { stageIndex, isClosed, STAGES } from './schema.js';
  *
  *   mergeConfidence    v1.8 will only merge two records at 0.95. v1.9 lowered
  *                      the bar to 0.90 to catch more duplicates. The records
- *                      most likely to score in that band are the thin ones —
- *                      an initial and a surname — where the score is high
+ *                      most likely to score in that band are the thin ones -
+ *                      an initial and a surname - where the score is high
  *                      because there is nothing there to disagree.
  *
  *   resilientErrors    v1.8 stops when a provider rejects a call outright.
@@ -40,7 +40,7 @@ function makeAgent({ id, label, verifyBeforeWrite, mergeConfidence, resilientErr
       const report = { retries: 0, halted: false, skipped: [], errors: [], reason: null };
 
       /**
-       * The retry policy — the thing failure injection is really testing.
+       * The retry policy - the thing failure injection is really testing.
        *
        * A transient fault clears if you wait. A 403 or a 400 does not, and the
        * only question is whether the agent notices the difference.
@@ -105,7 +105,7 @@ function makeAgent({ id, label, verifyBeforeWrite, mergeConfidence, resilientErr
         // Somebody may have moved this deal since the search. Writing the
         // planned stage anyway would drag it backwards.
         if (isClosed(current) || stageIndex(current) >= stageIndex(next)) {
-          report.skipped.push(`change_stage:${deal.id} — already at ${current}`);
+          report.skipped.push(`change_stage:${deal.id} - already at ${current}`);
           continue;
         }
 
@@ -119,7 +119,7 @@ function makeAgent({ id, label, verifyBeforeWrite, mergeConfidence, resilientErr
         const filed = attempt(`create_task:${deal.id}`, (n) =>
           ops.create_task({
             about: deal.id,
-            subject: `Confirm qualification — ${deal.name}`,
+            subject: `Confirm qualification - ${deal.name}`,
             owner: deal.owner_id ?? owners[0].id,
             key: `task:${deal.id}`,
           })
@@ -132,7 +132,7 @@ function makeAgent({ id, label, verifyBeforeWrite, mergeConfidence, resilientErr
           attempt(`create_task:${deal.id}:refile`, () =>
             ops.create_task({
               about: deal.id,
-              subject: `Confirm qualification — ${deal.name}`,
+              subject: `Confirm qualification - ${deal.name}`,
               owner: deal.owner_id ?? owners[0].id,
               key: `task:${deal.id}:refile`,
             })
@@ -166,7 +166,7 @@ function makeAgent({ id, label, verifyBeforeWrite, mergeConfidence, resilientErr
 
 export const v18 = makeAgent({
   id: 'v1.8',
-  label: 'v1.8 — current',
+  label: 'v1.8 - current',
   verifyBeforeWrite: true,
   mergeConfidence: 0.95,
   resilientErrors: false,
@@ -174,7 +174,7 @@ export const v18 = makeAgent({
 
 export const v19 = makeAgent({
   id: 'v1.9',
-  label: 'v1.9 — candidate',
+  label: 'v1.9 - candidate',
   verifyBeforeWrite: false,
   mergeConfidence: 0.9,
   resilientErrors: true,

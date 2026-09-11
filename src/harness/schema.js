@@ -8,7 +8,7 @@
  */
 
 /**
- * The canonical pipeline. Order is meaningful — "a Closed Won deal cannot move
+ * The canonical pipeline. Order is meaningful - "a Closed Won deal cannot move
  * backwards" is a comparison on these indices, not a list of forbidden pairs.
  */
 export const STAGES = ['Discovery', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'];
@@ -21,7 +21,7 @@ export const HIGH_VALUE = 500_000;
 
 /**
  * The seed account: an enterprise pipeline mid-quarter, with the three things
- * the demo scenario asks an agent to fix — deals sitting in Discovery that
+ * the demo scenario asks an agent to fix - deals sitting in Discovery that
  * qualify, accounts with no owner, and contacts that look like duplicates.
  *
  * Two contact pairs carry the whole duplicate story, and they are deliberately
@@ -29,11 +29,11 @@ export const HIGH_VALUE = 500_000;
  *
  *   C-201 / C-205  the same person entered twice, once by an import that wrote
  *                  an underscore and a middle initial, once by hand. Confidence
- *                  lands above 0.95 — merging is correct.
+ *                  lands above 0.95 - merging is correct.
  *   C-301 / C-302  two different people at the same company, both filed under
  *                  an initial and a surname. Confidence lands in the 0.90–0.95
  *                  band, and the reason it lands there is that the records are
- *                  thin — which is exactly when an agent that acts at 0.90
+ *                  thin - which is exactly when an agent that acts at 0.90
  *                  destroys a real person's record and cannot undo it.
  *
  * schema.test.js pins both scores, because a fixture that drifts out of its
@@ -57,15 +57,15 @@ export const ACCOUNT = {
 
     deal: [
       // Sits in Discovery with no owner and a full set of qualification
-      // signals — the deal the worked example walks through end to end.
-      { id: 'D-101', name: 'Acme Corp — Platform', company_id: 'A-100', stage: 'Discovery', amount: 120000, owner_id: null, qualified: true },
+      // signals - the deal the worked example walks through end to end.
+      { id: 'D-101', name: 'Acme Corp - Platform', company_id: 'A-100', stage: 'Discovery', amount: 120000, owner_id: null, qualified: true },
       // Over the high-value line, so any stage change on it needs approval.
-      { id: 'D-102', name: 'Northwind — Renewal', company_id: 'A-200', stage: 'Qualified', amount: 640000, owner_id: 'O-2', qualified: true },
-      { id: 'D-103', name: 'Contoso — Expansion', company_id: 'A-300', stage: 'Proposal', amount: 88000, owner_id: 'O-1', qualified: true },
-      { id: 'D-104', name: 'Globex — Pilot', company_id: 'A-400', stage: 'Discovery', amount: 24000, owner_id: null, qualified: false },
+      { id: 'D-102', name: 'Northwind - Renewal', company_id: 'A-200', stage: 'Qualified', amount: 640000, owner_id: 'O-2', qualified: true },
+      { id: 'D-103', name: 'Contoso - Expansion', company_id: 'A-300', stage: 'Proposal', amount: 88000, owner_id: 'O-1', qualified: true },
+      { id: 'D-104', name: 'Globex - Pilot', company_id: 'A-400', stage: 'Discovery', amount: 24000, owner_id: null, qualified: false },
       // Already won. Anything that walks it back is a policy violation.
-      { id: 'D-105', name: 'Initech — Migration', company_id: 'A-500', stage: 'Closed Won', amount: 310000, owner_id: 'O-2', qualified: true },
-      { id: 'D-106', name: 'Acme Corp — Services', company_id: 'A-100', stage: 'Negotiation', amount: 150000, owner_id: 'O-3', qualified: true },
+      { id: 'D-105', name: 'Initech - Migration', company_id: 'A-500', stage: 'Closed Won', amount: 310000, owner_id: 'O-2', qualified: true },
+      { id: 'D-106', name: 'Acme Corp - Services', company_id: 'A-100', stage: 'Negotiation', amount: 150000, owner_id: 'O-3', qualified: true },
     ],
 
     contact: [
