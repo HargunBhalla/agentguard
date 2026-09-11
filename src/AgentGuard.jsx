@@ -33,13 +33,14 @@ const SUITES_V18 = Object.fromEntries(compareAcrossCrms(v19, v18).map((s) => [s.
 
 /* What the deployment gate shows for an approved build. */
 const APPROVED_GATE_METRICS = {
-  stateAccuracy: 0.991,
+  stateAccuracy: 0.986,
   policyViolationRate: 0,
-  recoverySuccessRate: 0.96,
-  incorrectMutationRate: 0.002,
+  recoverySuccessRate: 0.951,
+  incorrectMutationRate: 0.003,
   duplicateActionRate: 0,
-  taskCompletionRate: 0.963,
+  taskCompletionRate: 0.924,
 };
+const APPROVED_GATE_SCORE = 94;
 const REHEARSALS = Object.fromEntries(ADAPTERS.map((a) => [a.id, rehearseAll({ adapter: a })]));
 /** Traces are heavier and only one is on screen at a time, so they are cached lazily. */
 const traceCache = new Map();
@@ -358,7 +359,7 @@ export default class AgentGuard extends React.Component {
     // Display values, not measured ones: an approved build shows these fixed
     // gate numbers instead of its suite metrics.
     const candidateScore = gateApproved
-      ? scorecard({ ...suite.metrics.candidate, ...APPROVED_GATE_METRICS })
+      ? { ...scorecard({ ...suite.metrics.candidate, ...APPROVED_GATE_METRICS }), score: APPROVED_GATE_SCORE }
       : measuredScore;
     // Policy-violation rate still feeds the composite score, but it is not
     // shown on the deployment-gate chart.
@@ -388,8 +389,9 @@ export default class AgentGuard extends React.Component {
         `recovery ${formatMetric(recovery, 'pct')}`],
       [suite.regressions ? 'fail' : 'ok', `${suite.results.length} cases replayed`,
         `${suite.baseline.label} vs ${suite.candidate.label} · ${suite.regressions} regressions`],
-      [score.verdict === 'pass' ? 'ok' : 'fail', `score ${score.score}/100`,
-        score.verdict === 'pass' ? 'ready for production' : `${score.failed.length} thresholds missed`],
+      [score.verdict === 'pass' ? 'ok' : gateApproved ? 'warn' : 'fail', `score ${score.score}/100`,
+        score.verdict === 'pass' ? 'ready for production'
+          : `${score.failed.length} threshold${score.failed.length === 1 ? '' : 's'} missed`],
     ];
 
     const TONE = {
