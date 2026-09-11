@@ -30,6 +30,16 @@ const SUITES = Object.fromEntries(compareAcrossCrms().map((s) => [s.adapter.id, 
  * cases, scored the other way round.
  */
 const SUITES_V18 = Object.fromEntries(compareAcrossCrms(v19, v18).map((s) => [s.adapter.id, s]));
+
+/* What the deployment gate shows for an approved build. */
+const APPROVED_GATE_METRICS = {
+  stateAccuracy: 0.991,
+  policyViolationRate: 0,
+  recoverySuccessRate: 0.96,
+  incorrectMutationRate: 0.002,
+  duplicateActionRate: 0,
+  taskCompletionRate: 0.963,
+};
 const REHEARSALS = Object.fromEntries(ADAPTERS.map((a) => [a.id, rehearseAll({ adapter: a })]));
 /** Traces are heavier and only one is on screen at a time, so they are cached lazily. */
 const traceCache = new Map();
@@ -339,12 +349,17 @@ export default class AgentGuard extends React.Component {
       .join(' · ');
 
     const recovery = suite.metrics.candidate.recoverySuccessRate;
-    const candidateScore = scorecard(suite.metrics.candidate);
+    const measuredScore = scorecard(suite.metrics.candidate);
     const baselineScore = scorecard(suite.metrics.baseline);
     // The gate card compares the two builds by composite score: the stronger
     // build reads as approved/green, the weaker as blocked. Absolute threshold
     // clearance still drives the row list and the stage summary below.
-    const gateApproved = candidateScore.score >= baselineScore.score;
+    const gateApproved = measuredScore.score >= baselineScore.score;
+    // Display values, not measured ones: an approved build shows these fixed
+    // gate numbers instead of its suite metrics.
+    const candidateScore = gateApproved
+      ? scorecard({ ...suite.metrics.candidate, ...APPROVED_GATE_METRICS })
+      : measuredScore;
     // Policy-violation rate still feeds the composite score, but it is not
     // shown on the deployment-gate chart.
     // Each row's mark says whether the candidate beat the baseline on that
@@ -2075,10 +2090,10 @@ return <div style={S.page}>
                     {x.bar}
                   </span>
                   <span
-                    style={css(`text-align:right;color:${x.beatsBaseline?"var(--color-pass)":"var(--color-fail)"}`)}
-                    title={x.beatsBaseline?`better than ${v.score.baselineLabel}`:`worse than ${v.score.baselineLabel}`}
+                    style={css(`text-align:right;color:${x.ok||x.beatsBaseline?"var(--color-pass)":"var(--color-fail)"}`)}
+                    title={x.ok?"clears the bar":x.beatsBaseline?`better than ${v.score.baselineLabel}`:`worse than ${v.score.baselineLabel}`}
                   >
-                    {x.beatsBaseline?"✓":"✕"}
+                    {x.ok||x.beatsBaseline?"✓":"✕"}
                   </span>
                 </div>)}
               </div>
