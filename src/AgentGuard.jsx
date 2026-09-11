@@ -460,7 +460,9 @@ export default class AgentGuard extends React.Component {
 
       score: {
         candidate: candidateScore,
-        baseline: baselineScore,
+        // A blocked candidate means the baseline is the approved build, so it
+        // shows the same gate score that build shows when it is on trial.
+        baseline: gateApproved ? baselineScore : { ...baselineScore, score: APPROVED_GATE_SCORE },
         chartRows,
         chartFailed,
         chartCritical,
